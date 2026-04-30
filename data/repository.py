@@ -1,0 +1,2721 @@
+"""
+All database queries live here. UI/service code calls these functions only.
+
+Optimisation rules enforced:
+  - SELECT only required columns
+  - Push ALL filters into SQL
+  - Aggregate in SQL, not pandas
+  - No SELECT *
+  - LIMIT on large result sets
+  - subjects_affected > 0 enforced on adverse events
+  - browse_conditions: always filter mesh_type = 'mesh-list'
+"""
+from __future__ import annotations
+
+import streamlit as st
+import pandas as pd
+
+from data.db import query_aact, query_aact_ae, query_aact_uncached, query_pricing, query_drugs, query_market_access
+from data.query_builder import QueryBuilder
+from utils.filters import FilterState
+from config.settings import (
+    MAX_TABLE_ROWS, ANNUAL_PRICING_TABLE, HISTORICAL_PRICING_TABLE,
+    DRUG_CLASSES_TABLE, DRUGS_ATC_COL, DRUGS_BRAND_COL, DRUG_INDICATIONS_TABLE, DRUGS_INDICATION_COL,
+    MA_TABLE_2025, MA_TABLE_2026,
+)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  FILTER OPTIONS  (for sidebar dropdowns – constrained by global filters)
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=600, show_spinner=False)
+def get_filter_options(indication: str | None, atc_class: str | None) -> dict:
+    """
+    Return available filter values constrained by the active global filters.
+    All values come from the AACT DB, scoped to matching nct_ids.
+    """
+    # Build a minimal FilterState for the QB
+    fs = FilterState(indication_name=indication, atc_class_name=atc_class)
+    qb = QueryBuilder(fs)
+    nct_clause, nct_params = qb.nct_subquery_clause("s")
+
+    # Sponsors
+    sql_sponsors = f"""
+        SELECT DISTINCT sp.name
+        FROM ctgov.sponsors sp
+        JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+        WHERE {nct_clause}
+          AND sp.lead_or_collaborator = 'lead'
+          AND sp.name IS NOT NULL
+        ORDER BY sp.name
+        LIMIT 500
+    """
+    # Study types
+    sql_study_types = f"""
+        SELECT DISTINCT s.study_type
+        FROM ctgov.studies s
+        WHERE {nct_clause}
+          AND s.study_type IS NOT NULL
+        ORDER BY s.study_type
+    """
+    # Phases
+    sql_phases = f"""
+        SELECT DISTINCT s.phase
+        FROM ctgov.studies s
+        WHERE {nct_clause}
+          AND s.phase IS NOT NULL
+        ORDER BY s.phase
+    """
+    # Statuses
+    sql_statuses = f"""
+        SELECT DISTINCT s.overall_status
+        FROM ctgov.studies s
+        WHERE {nct_clause}
+          AND s.overall_status IS NOT NULL
+        ORDER BY s.overall_status
+    """
+    # Countries
+    sql_countries = f"""
+        SELECT DISTINCT c.name
+        FROM ctgov.countries c
+        JOIN ctgov.studies s ON s.nct_id = c.nct_id
+        WHERE {nct_clause}
+          AND c.name IS NOT NULL AND c.removed IS NOT TRUE
+        ORDER BY c.name
+        LIMIT 300
+    """
+    # Endpoint categories
+    sql_categories = f"""
+        SELECT DISTINCT oc.outcome_category
+        FROM public.drug_trial_outcome_categories oc
+        JOIN ctgov.studies s ON s.nct_id = oc.nct_id
+        WHERE {nct_clause}
+          AND oc.outcome_category IS NOT NULL
+        ORDER BY oc.outcome_category
+    """
+    # PRO instruments
+    sql_pro = f"""
+        SELECT DISTINCT p.instrument_name
+        FROM public.drug_trial_design_outcomes_pro p
+        JOIN ctgov.studies s ON s.nct_id = p.nct_id
+        WHERE {nct_clause}
+          AND p.instrument_name IS NOT NULL
+        ORDER BY p.instrument_name
+        LIMIT 200
+    """
+    # Brands in scope
+    sql_brands = f"""
+        SELECT DISTINCT dt.brand_name
+        FROM public.drug_trials dt
+        JOIN ctgov.studies s ON s.nct_id = dt.nct_id
+        WHERE {nct_clause}
+          AND dt.brand_name IS NOT NULL
+        ORDER BY dt.brand_name
+        LIMIT 300
+    """
+    # PRO domains
+    sql_domains = f"""
+        SELECT DISTINCT d.criteria
+        FROM public.domain_score_match d
+        JOIN ctgov.studies s ON s.nct_id = d.nct_id
+        WHERE {nct_clause}
+          AND d.criteria IS NOT NULL
+        ORDER BY d.criteria
+        LIMIT 200
+    """
+    # Sponsor agency classes (lead sponsors only)
+    sql_agency_classes = f"""
+        SELECT DISTINCT sp.agency_class
+        FROM ctgov.sponsors sp
+        JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+        WHERE {nct_clause}
+          AND sp.lead_or_collaborator = 'lead'
+          AND sp.agency_class IS NOT NULL
+        ORDER BY sp.agency_class
+    """
+
+    def _vals(df: pd.DataFrame) -> list:
+        if df.empty:
+            return []
+        return df.iloc[:, 0].dropna().tolist()
+
+    # Brands in scope — computed first so we can use them to scope drug_indications
+    brands_list = _vals(query_aact(sql_brands, nct_params))
+
+    # Drug label indications (DRUGS DB, scoped by brands currently in scope).
+    # These populate the downstream "Drug Indication" filter in the Sponsor/Drug tab.
+    drug_ind_list: list = []
+    if brands_list:
+        from data.db import query_drugs
+        di_ph = ", ".join(f":di_b_{i}" for i in range(len(brands_list)))
+        di_p  = {f"di_b_{i}": b for i, b in enumerate(brands_list)}
+        sql_drug_ind = f"""
+            SELECT DISTINCT indication_name
+            FROM public.drug_indications
+            WHERE brand_name IN ({di_ph})
+              AND indication_name IS NOT NULL
+            ORDER BY indication_name
+            LIMIT 300
+        """
+        drug_ind_list = _vals(query_drugs(sql_drug_ind, di_p))
+
+    return {
+        "sponsors":         _vals(query_aact(sql_sponsors,       nct_params)),
+        "agency_classes":   _vals(query_aact(sql_agency_classes, nct_params)),
+        "study_types":      _vals(query_aact(sql_study_types,    nct_params)),
+        "phases":           _vals(query_aact(sql_phases,         nct_params)),
+        "statuses":         _vals(query_aact(sql_statuses,       nct_params)),
+        "countries":        _vals(query_aact(sql_countries,      nct_params)),
+        "categories":       _vals(query_aact(sql_categories,     nct_params)),
+        "pro_instruments":  _vals(query_aact(sql_pro,            nct_params)),
+        "brands":           brands_list,
+        "domains":          _vals(query_aact(sql_domains,        nct_params)),
+        "drug_indications": drug_ind_list,
+    }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  OVERVIEW / HOME KPIs
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _build_scope_key(filters: FilterState) -> str:
+    """Deterministic snapshot key matching scripts/generate_snapshot_sql.py logic."""
+    parts = []
+    if filters.allowed_indications is not None:
+        parts.append("ind:" + "|".join(sorted(filters.allowed_indications)))
+    if filters.allowed_atc_classes is not None:
+        parts.append("atc:" + "|".join(sorted(filters.allowed_atc_classes)))
+    return "__".join(parts) if parts else "global"
+
+
+def get_overview_kpis(filters: FilterState) -> dict:
+    # ── Fast path: no sidebar filters → read from pre-computed snapshot ──────
+    if not filters.has_any_filter():
+        scope_key = _build_scope_key(filters)
+        snap_df = query_aact(
+            "SELECT * FROM public.overview_kpis_snapshot "
+            "WHERE scope_key = :scope_key ORDER BY refreshed_at DESC LIMIT 1",
+            {"scope_key": scope_key},
+        )
+        if snap_df.empty and scope_key != "global":
+            # Snapshot not yet generated for this scope — fall back to global row
+            snap_df = query_aact(
+                "SELECT * FROM public.overview_kpis_snapshot "
+                "WHERE scope_key = 'global' ORDER BY refreshed_at DESC LIMIT 1",
+                {},
+            )
+        if not snap_df.empty:
+            row = snap_df.iloc[0]
+            return {
+                "total_trials":        int(row["total_trials"]        or 0),
+                "active_trials":       int(row["active_trials"]       or 0),
+                "completed_trials":    int(row["completed_trials"]     or 0),
+                "trials_with_results": int(row["trials_with_results"]  or 0),
+                "median_enrollment":   float(row["median_enrollment"]  or 0),
+                "unique_sponsors":     int(row["unique_sponsors"]      or 0),
+                "unique_drugs":        int(row["unique_drugs"]         or 0),
+                "unique_conditions":   int(row["unique_conditions"]    or 0),
+                "trials_with_pros":    int(row["trials_with_pros"]     or 0),
+            }
+
+    # ── Filtered path: run live queries ──────────────────────────────────────
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+
+    sql = f"""
+        SELECT
+            COUNT(DISTINCT s.nct_id)                                          AS total_trials,
+            COUNT(DISTINCT CASE WHEN s.overall_status IN
+                ('RECRUITING','ACTIVE_NOT_RECRUITING') THEN s.nct_id END)     AS active_trials,
+            COUNT(DISTINCT CASE WHEN s.overall_status = 'COMPLETED'
+                THEN s.nct_id END)                                            AS completed_trials,
+            COUNT(DISTINCT CASE WHEN s.results_first_submitted_date IS NOT NULL
+                THEN s.nct_id END)                                            AS trials_with_results,
+            PERCENTILE_CONT(0.5) WITHIN GROUP
+                (ORDER BY s.enrollment)                                       AS median_enrollment
+        FROM ctgov.studies s
+        WHERE {scope_clause}
+    """
+    sql_sponsors = f"""
+        SELECT COUNT(DISTINCT sp.name) AS unique_sponsors
+        FROM ctgov.sponsors sp
+        JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+        WHERE {scope_clause}
+          AND sp.lead_or_collaborator = 'lead'
+    """
+    sql_drugs = f"""
+        SELECT COUNT(DISTINCT dt.brand_name) AS unique_drugs
+        FROM public.drug_trials dt
+        JOIN ctgov.studies s ON s.nct_id = dt.nct_id
+        WHERE {scope_clause}
+    """
+    sql_conditions = f"""
+        SELECT COUNT(DISTINCT bc.downcase_mesh_term) AS unique_conditions
+        FROM ctgov.browse_conditions bc
+        JOIN ctgov.studies s ON s.nct_id = bc.nct_id
+        WHERE {scope_clause}
+          AND bc.mesh_type = 'mesh-list'
+    """
+    sql_pros = f"""
+        SELECT COUNT(DISTINCT p.nct_id) AS trials_with_pros
+        FROM public.drug_trial_design_outcomes_pro p
+        JOIN ctgov.studies s ON s.nct_id = p.nct_id
+        WHERE {scope_clause}
+    """
+
+    df       = query_aact(sql,            params)
+    sp_df    = query_aact(sql_sponsors,   params)
+    dr_df    = query_aact(sql_drugs,      params)
+    cond_df  = query_aact(sql_conditions, params)
+    pro_df   = query_aact(sql_pros,       params)
+
+    row = df.iloc[0] if not df.empty else {}
+    return {
+        "total_trials":       int(row.get("total_trials",    0) or 0),
+        "active_trials":      int(row.get("active_trials",   0) or 0),
+        "completed_trials":   int(row.get("completed_trials",0) or 0),
+        "trials_with_results":int(row.get("trials_with_results",0) or 0),
+        "median_enrollment":  float(row.get("median_enrollment", 0) or 0),
+        "unique_sponsors":    int(sp_df.iloc[0]["unique_sponsors"]   if not sp_df.empty   else 0),
+        "unique_drugs":       int(dr_df.iloc[0]["unique_drugs"]      if not dr_df.empty   else 0),
+        "unique_conditions":  int(cond_df.iloc[0]["unique_conditions"]if not cond_df.empty else 0),
+        "trials_with_pros":   int(pro_df.iloc[0]["trials_with_pros"] if not pro_df.empty  else 0),
+    }
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_trials_by_phase(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            COALESCE(s.phase, 'N/A') AS phase,
+            COUNT(DISTINCT s.nct_id) AS trial_count
+        FROM ctgov.studies s
+        WHERE {scope_clause}
+        GROUP BY 1 ORDER BY 2 DESC
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_trials_over_time(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            DATE_TRUNC('year', s.study_first_posted_date) AS year,
+            COUNT(DISTINCT s.nct_id)                      AS trial_count
+        FROM ctgov.studies s
+        WHERE {scope_clause}
+          AND s.study_first_posted_date IS NOT NULL
+        GROUP BY 1 ORDER BY 1
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_top_sponsors(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            sp.name AS sponsor,
+            COUNT(DISTINCT sp.nct_id) AS trial_count
+        FROM ctgov.sponsors sp
+        JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+        WHERE {scope_clause}
+          AND sp.lead_or_collaborator = 'lead'
+          AND sp.name IS NOT NULL
+        GROUP BY 1
+        ORDER BY 2 DESC
+        LIMIT 10
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_top_conditions(filters: FilterState, limit: int = 20) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            bc.mesh_term             AS condition,
+            COUNT(DISTINCT bc.nct_id) AS trial_count
+        FROM ctgov.browse_conditions bc
+        JOIN ctgov.studies s ON s.nct_id = bc.nct_id
+        WHERE {scope_clause}
+          AND bc.mesh_type = 'mesh-list'
+          AND bc.mesh_term IS NOT NULL
+        GROUP BY 1
+        ORDER BY 2 DESC
+        LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_top_interventions(filters: FilterState, limit: int = 20) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            i.name                   AS intervention,
+            COUNT(DISTINCT i.nct_id) AS trial_count
+        FROM ctgov.interventions i
+        JOIN ctgov.studies s ON s.nct_id = i.nct_id
+        WHERE {scope_clause}
+          AND i.intervention_type = 'Drug'
+          AND i.name IS NOT NULL
+        GROUP BY 1
+        ORDER BY 2 DESC
+        LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  LANDSCAPE
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_landscape_kpis(filters: FilterState) -> dict:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    where_str = f"WHERE {scope_clause}" if scope_clause else ""
+
+    sql = f"""
+        SELECT
+            COUNT(DISTINCT s.nct_id)                                        AS total_trials,
+            COUNT(DISTINCT CASE WHEN s.overall_status IN
+                ('RECRUITING','ACTIVE_NOT_RECRUITING') THEN s.nct_id END)   AS active_trials,
+            COUNT(DISTINCT CASE WHEN s.overall_status = 'COMPLETED'
+                THEN s.nct_id END)                                          AS completed_trials,
+            COUNT(DISTINCT CASE WHEN s.results_first_submitted_date IS NOT NULL
+                THEN s.nct_id END)                                          AS with_results,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY s.enrollment)      AS median_enrollment,
+            COUNT(DISTINCT sp2.name)                                        AS unique_sponsors
+        FROM ctgov.studies s
+        LEFT JOIN ctgov.sponsors sp2
+               ON sp2.nct_id = s.nct_id AND sp2.lead_or_collaborator = 'lead'
+        {where_str}
+    """
+    df = query_aact(sql, params)
+    row = df.iloc[0] if not df.empty else {}
+    total = int(row.get("total_trials", 0) or 0)
+    completed = int(row.get("completed_trials", 0) or 0)
+    return {
+        "total_trials":     total,
+        "active_trials":    int(row.get("active_trials",   0) or 0),
+        "completed_trials": completed,
+        "with_results":     int(row.get("with_results",    0) or 0),
+        "median_enrollment":float(row.get("median_enrollment", 0) or 0),
+        "unique_sponsors":  int(row.get("unique_sponsors", 0) or 0),
+        "pct_completed":    round(100.0 * completed / total, 1) if total else 0.0,
+    }
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_sponsor_share(filters: FilterState, limit: int = 15) -> pd.DataFrame:
+    return get_top_sponsors(filters, limit)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_status_distribution(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            COALESCE(s.overall_status, 'UNKNOWN') AS status,
+            COUNT(DISTINCT s.nct_id)               AS trial_count
+        FROM ctgov.studies s
+        WHERE {scope_clause}
+        GROUP BY 1 ORDER BY 2 DESC
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_country_distribution(filters: FilterState, limit: int = 20) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            c.name                   AS country,
+            COUNT(DISTINCT c.nct_id) AS trial_count
+        FROM ctgov.countries c
+        JOIN ctgov.studies s ON s.nct_id = c.nct_id
+        WHERE {scope_clause}
+          AND c.name IS NOT NULL
+          AND c.removed IS NOT TRUE
+        GROUP BY 1
+        ORDER BY 2 DESC
+        LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  PIPELINE LANDSCAPE
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pipeline_kpis(indication: str | None, sponsors: tuple[str, ...] = ()) -> dict:
+    """Pipeline KPIs from onco_pipeline_trials, filtered by condition matching indication."""
+    params: dict = {}
+    cond_where = ""
+    if indication:
+        cond_where = "WHERE LOWER(pt.condition) LIKE :ind_like"
+        params["ind_like"] = f"%{indication.lower()}%"
+    if sponsors:
+        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
+        sp_clause = "AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
+        cond_where = (cond_where + " " + sp_clause) if cond_where else ("WHERE " + sp_clause[4:])
+        params.update(sp_params)
+
+    pros_where = cond_where.replace("WHERE", "WHERE", 1)  # same conditions apply to PRO query
+    sql = f"""
+        SELECT
+            COUNT(DISTINCT pt.nct_id)            AS pipeline_trials,
+            COUNT(DISTINCT pt.intervention_name) AS unique_assets,
+            COUNT(DISTINCT pt.sponsor_name)      AS active_sponsors,
+            COUNT(DISTINCT pt.condition)         AS indications_covered
+        FROM public.onco_pipeline_trials pt
+        {cond_where}
+    """
+    sql_pros = f"""
+        SELECT COUNT(DISTINCT pp.nct_id) AS with_pros
+        FROM public.onco_pipeline_design_outcomes_pro pp
+        JOIN public.onco_pipeline_trials pt ON pt.nct_id = pp.nct_id
+        {pros_where}
+    """
+    df     = query_aact(sql,      params)
+    pro_df = query_aact(sql_pros, params)
+    row = df.iloc[0] if not df.empty else {}
+    return {
+        "pipeline_trials":    int(row.get("pipeline_trials",   0) or 0),
+        "unique_assets":      int(row.get("unique_assets",     0) or 0),
+        "active_sponsors":    int(row.get("active_sponsors",   0) or 0),
+        "indications_covered":int(row.get("indications_covered",0) or 0),
+        "with_pros":          int(pro_df.iloc[0]["with_pros"]  if not pro_df.empty else 0),
+    }
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pipeline_by_sponsor(indication: str | None, sponsors: tuple[str, ...] = (), limit: int = 20) -> pd.DataFrame:
+    params: dict = {}
+    cond_where = "WHERE pt.sponsor_name IS NOT NULL"
+    if indication:
+        cond_where += " AND LOWER(pt.condition) LIKE :ind_like"
+        params["ind_like"] = f"%{indication.lower()}%"
+    if sponsors:
+        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
+        cond_where += " AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
+        params.update(sp_params)
+    sql = f"""
+        SELECT
+            pt.sponsor_name              AS sponsor,
+            COUNT(DISTINCT pt.nct_id)   AS pipeline_trials,
+            COUNT(DISTINCT pt.intervention_name) AS unique_assets
+        FROM public.onco_pipeline_trials pt
+        {cond_where}
+        GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pipeline_by_indication(indication: str | None, sponsors: tuple[str, ...] = (), limit: int = 25) -> pd.DataFrame:
+    params: dict = {}
+    cond_where = "WHERE pt.condition IS NOT NULL"
+    if indication:
+        cond_where += " AND LOWER(pt.condition) LIKE :ind_like"
+        params["ind_like"] = f"%{indication.lower()}%"
+    if sponsors:
+        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
+        cond_where += " AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
+        params.update(sp_params)
+    sql = f"""
+        SELECT
+            pt.condition                 AS condition,
+            COUNT(DISTINCT pt.nct_id)   AS trial_count,
+            COUNT(DISTINCT pt.sponsor_name) AS sponsors
+        FROM public.onco_pipeline_trials pt
+        {cond_where}
+        GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pipeline_top_interventions(indication: str | None, sponsors: tuple[str, ...] = (), limit: int = 25) -> pd.DataFrame:
+    params: dict = {}
+    cond_where = "WHERE pt.intervention_name IS NOT NULL"
+    if indication:
+        cond_where += " AND LOWER(pt.condition) LIKE :ind_like"
+        params["ind_like"] = f"%{indication.lower()}%"
+    if sponsors:
+        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
+        cond_where += " AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
+        params.update(sp_params)
+    sql = f"""
+        SELECT
+            pt.intervention_name         AS intervention,
+            COUNT(DISTINCT pt.nct_id)   AS trial_count,
+            COUNT(DISTINCT pt.sponsor_name) AS sponsors
+        FROM public.onco_pipeline_trials pt
+        {cond_where}
+        GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pipeline_sponsor_indication_heatmap(indication: str | None, sponsors: tuple[str, ...] = ()) -> pd.DataFrame:
+    """Return sponsor × condition counts for heatmap."""
+    params: dict = {}
+    cond_where = "WHERE pt.sponsor_name IS NOT NULL AND pt.condition IS NOT NULL"
+    if indication:
+        cond_where += " AND LOWER(pt.condition) LIKE :ind_like"
+        params["ind_like"] = f"%{indication.lower()}%"
+    if sponsors:
+        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
+        cond_where += " AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
+        params.update(sp_params)
+    sql = f"""
+        WITH ranked_sponsors AS (
+            SELECT sponsor_name, COUNT(DISTINCT nct_id) AS cnt
+            FROM public.onco_pipeline_trials
+            {cond_where.replace('pt.', '')}
+            GROUP BY 1 ORDER BY 2 DESC LIMIT 15
+        ),
+        ranked_conditions AS (
+            SELECT condition, COUNT(DISTINCT nct_id) AS cnt
+            FROM public.onco_pipeline_trials
+            {cond_where.replace('pt.', '')}
+            GROUP BY 1 ORDER BY 2 DESC LIMIT 15
+        )
+        SELECT
+            pt.sponsor_name  AS sponsor,
+            pt.condition     AS condition,
+            COUNT(DISTINCT pt.nct_id) AS trial_count
+        FROM public.onco_pipeline_trials pt
+        JOIN ranked_sponsors rs ON rs.sponsor_name = pt.sponsor_name
+        JOIN ranked_conditions rc ON rc.condition = pt.condition
+        {cond_where}
+        GROUP BY 1, 2
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pipeline_pro_usage(indication: str | None, sponsors: tuple[str, ...] = (), limit: int = 20) -> pd.DataFrame:
+    params: dict = {}
+    ind_filter = ""
+    if indication:
+        ind_filter = "AND LOWER(pt.condition) LIKE :ind_like"
+        params["ind_like"] = f"%{indication.lower()}%"
+    sp_filter = ""
+    if sponsors:
+        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
+        sp_filter = "AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
+        params.update(sp_params)
+    sql = f"""
+        SELECT
+            pp.instrument_name,
+            COUNT(DISTINCT pp.nct_id) AS trial_count
+        FROM public.onco_pipeline_design_outcomes_pro pp
+        JOIN public.onco_pipeline_trials pt ON pt.nct_id = pp.nct_id
+        WHERE pp.instrument_name IS NOT NULL
+          {ind_filter}
+          {sp_filter}
+        GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pipeline_trials_table(indication: str | None, limit: int = MAX_TABLE_ROWS) -> pd.DataFrame:
+    params: dict = {}
+    cond_where = ""
+    if indication:
+        cond_where = "WHERE LOWER(pt.condition) LIKE :ind_like"
+        params["ind_like"] = f"%{indication.lower()}%"
+    sql = f"""
+        SELECT
+            pt.nct_id,
+            pt.sponsor_name,
+            pt.intervention_name,
+            pt.condition,
+            s.phase,
+            s.overall_status,
+            s.enrollment,
+            s.start_date,
+            s.primary_completion_date
+        FROM public.onco_pipeline_trials pt
+        LEFT JOIN ctgov.studies s ON s.nct_id = pt.nct_id
+        {cond_where}
+        ORDER BY s.start_date DESC NULLS LAST
+        LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  DRUG DETAIL
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_drug_trials(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            s.nct_id,
+            s.brief_title,
+            dt.brand_name,
+            s.phase,
+            s.overall_status,
+            s.enrollment,
+            s.start_date,
+            s.primary_completion_date,
+            s.results_first_submitted_date,
+            sp.name AS lead_sponsor
+        FROM ctgov.studies s
+        JOIN public.drug_trials dt ON dt.nct_id = s.nct_id
+        LEFT JOIN ctgov.sponsors sp
+               ON sp.nct_id = s.nct_id AND sp.lead_or_collaborator = 'lead'
+        WHERE {scope_clause}
+        ORDER BY s.start_date DESC NULLS LAST
+        LIMIT 500
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_drug_conditions(filters: FilterState, limit: int = 20) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    params["lim"] = limit
+    sql = f"""
+        SELECT
+            bc.mesh_term              AS condition,
+            COUNT(DISTINCT bc.nct_id) AS trial_count
+        FROM ctgov.browse_conditions bc
+        JOIN ctgov.studies s ON s.nct_id = bc.nct_id
+        WHERE {scope_clause}
+          AND bc.mesh_type = 'mesh-list'
+        GROUP BY 1 ORDER BY 2 DESC LIMIT :lim
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_drug_classes(filters: FilterState) -> pd.DataFrame:
+    """Return ATC drug class counts for the current filter scope.
+
+    Two-step cross-DB query:
+      Step 1 (AACT DB)  — resolve which brand names are actually in scope.
+      Step 2 (Drugs DB) — look up ATC classes for those brands.
+    """
+    from data.db import query_drugs
+    from data.query_builder import _list_clause, resolve_brand_names_from_drug_indication
+    from config.settings import DRUG_CLASSES_TABLE, DRUGS_BRAND_COL, DRUGS_ATC_COL
+
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+
+    # Build optional brand restriction (ATC-derived + user-selected + drug-indication).
+    restricted_brands: list[str] = []
+    if qb.brand_names:
+        restricted_brands.extend(qb.brand_names)
+    if filters.brand_name:
+        restricted_brands.extend(filters.brand_name)
+    if filters.drug_indication:
+        di_brands = resolve_brand_names_from_drug_indication(filters.drug_indication)
+        restricted_brands.extend(di_brands)
+    restricted_brands = list(dict.fromkeys(restricted_brands))  # deduplicate, preserve order
+
+    brand_filter = ""
+    if restricted_brands:
+        bn_p: dict = {}
+        bn_frag = _list_clause("dt.brand_name", restricted_brands, bn_p, "dcbf")
+        params.update(bn_p)
+        brand_filter = f"AND {bn_frag}"
+
+    # Step 1: get brand names that are in scope from AACT DB.
+    brands_sql = f"""
+        SELECT DISTINCT dt.brand_name
+        FROM ctgov.studies s
+        JOIN public.drug_trials dt ON dt.nct_id = s.nct_id
+        WHERE {scope_clause}
+          AND dt.brand_name IS NOT NULL
+          {brand_filter}
+    """
+    brands_df = query_aact(brands_sql, params)
+    if brands_df.empty:
+        return pd.DataFrame(columns=["drug_class", "brand_count"])
+
+    in_scope_brands = brands_df["brand_name"].dropna().tolist()
+
+    # Step 2: look up ATC classes for those brands from Drugs DB.
+    atc_params: dict = {}
+    bn_frag2 = _list_clause(DRUGS_BRAND_COL, in_scope_brands, atc_params, "atcbn")
+    atc_sql = f"""
+        SELECT
+            {DRUGS_ATC_COL}                   AS drug_class,
+            COUNT(DISTINCT {DRUGS_BRAND_COL}) AS brand_count
+        FROM {DRUG_CLASSES_TABLE}
+        WHERE {bn_frag2}
+          AND {DRUGS_ATC_COL} IS NOT NULL
+          AND {DRUGS_ATC_COL} <> ''
+        GROUP BY 1 ORDER BY 2 DESC
+        LIMIT 10
+    """
+    return query_drugs(atc_sql, atc_params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_drug_phase_mix(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            COALESCE(s.phase, 'N/A') AS phase,
+            COUNT(DISTINCT s.nct_id) AS trial_count
+        FROM ctgov.studies s
+        WHERE {scope_clause}
+        GROUP BY 1 ORDER BY 2 DESC
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_drug_brand_names(filters: FilterState, limit: int = 30) -> pd.DataFrame:
+    """Return brand names and their trial counts, restricted to in-scope brands only."""
+    from data.query_builder import _list_clause, resolve_brand_names_from_drug_indication
+
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    params["lim"] = limit
+
+    # Build brand restriction so the JOIN with drug_trials only surfaces brands
+    # that are actually in scope. Without this, every brand co-enrolled in a
+    # scoped trial would appear even if it belongs to a different drug class.
+    # Restriction applies when ATC class, explicit brand selection, or drug
+    # indication is active. When only indication_name is set the brand list is
+    # intentionally unrestricted (indication is condition-level, not drug-level).
+    restricted_brands: list[str] = []
+    if qb.brand_names:
+        restricted_brands.extend(qb.brand_names)
+    if filters.brand_name:
+        restricted_brands.extend(filters.brand_name)
+    if filters.drug_indication:
+        di_brands = resolve_brand_names_from_drug_indication(filters.drug_indication)
+        restricted_brands.extend(di_brands)
+    restricted_brands = list(dict.fromkeys(restricted_brands))  # deduplicate, preserve order
+
+    brand_filter = ""
+    if restricted_brands:
+        bn_p: dict = {}
+        bn_frag = _list_clause("dt.brand_name", restricted_brands, bn_p, "dbf")
+        params.update(bn_p)
+        brand_filter = f"AND {bn_frag}"
+
+    sql = f"""
+        SELECT
+            dt.brand_name,
+            COUNT(DISTINCT s.nct_id) AS trial_count
+        FROM ctgov.studies s
+        JOIN public.drug_trials dt ON dt.nct_id = s.nct_id
+        WHERE {scope_clause}
+          AND dt.brand_name IS NOT NULL
+          {brand_filter}
+        GROUP BY 1 ORDER BY 2 DESC
+        LIMIT :lim
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_drug_phase_brand_heatmap(filters: FilterState, limit: int = 20) -> pd.DataFrame:
+    """
+    Return a pivoted DataFrame (phase × brand_name) with trial counts.
+    Brands are limited to the top `limit` by trial count to keep the chart readable.
+    """
+    from data.query_builder import _list_clause, resolve_brand_names_from_drug_indication
+
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    params["lim"] = limit
+
+    # Same brand restriction logic as get_drug_brand_names — only surface brands
+    # that are actually in scope, not every brand co-enrolled in scoped trials.
+    restricted_brands: list[str] = []
+    if qb.brand_names:
+        restricted_brands.extend(qb.brand_names)
+    if filters.brand_name:
+        restricted_brands.extend(filters.brand_name)
+    if filters.drug_indication:
+        di_brands = resolve_brand_names_from_drug_indication(filters.drug_indication)
+        restricted_brands.extend(di_brands)
+    restricted_brands = list(dict.fromkeys(restricted_brands))
+
+    brand_filter = ""
+    if restricted_brands:
+        bn_p: dict = {}
+        bn_frag = _list_clause("dt.brand_name", restricted_brands, bn_p, "hbf")
+        params.update(bn_p)
+        brand_filter = f"AND {bn_frag}"
+
+    # First fetch the top brands by trial count so we can restrict the heatmap
+    top_brands_sql = f"""
+        SELECT dt.brand_name
+        FROM ctgov.studies s
+        JOIN public.drug_trials dt ON dt.nct_id = s.nct_id
+        WHERE {scope_clause}
+          AND dt.brand_name IS NOT NULL
+          {brand_filter}
+        GROUP BY 1 ORDER BY COUNT(DISTINCT s.nct_id) DESC
+        LIMIT :lim
+    """
+    top_brands_df = query_aact(top_brands_sql, params)
+    if top_brands_df.empty:
+        return pd.DataFrame()
+
+    top_brands = top_brands_df["brand_name"].tolist()
+
+    params2: dict = dict(params)
+    bn_frag = _list_clause("dt.brand_name", top_brands, params2, "hbm")
+
+    detail_sql = f"""
+        SELECT
+            COALESCE(s.phase, 'N/A') AS phase,
+            dt.brand_name,
+            COUNT(DISTINCT s.nct_id) AS trial_count
+        FROM ctgov.studies s
+        JOIN public.drug_trials dt ON dt.nct_id = s.nct_id
+        WHERE {scope_clause}
+          AND {bn_frag}
+        GROUP BY 1, 2
+    """
+    long_df = query_aact(detail_sql, params2)
+    if long_df.empty:
+        return pd.DataFrame()
+
+    pivot = long_df.pivot_table(
+        index="phase", columns="brand_name", values="trial_count", fill_value=0
+    )
+    # Order columns by total trials descending (matches top_brands order)
+    col_order = [b for b in top_brands if b in pivot.columns]
+    pivot = pivot[col_order]
+    return pivot
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  SPONSOR BENCHMARK
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_sponsor_trial_counts(filters: FilterState, limit: int = 20) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            sp.name                   AS sponsor,
+            COUNT(DISTINCT sp.nct_id) AS total_trials,
+            COUNT(DISTINCT CASE WHEN s.overall_status IN
+                ('RECRUITING','ACTIVE_NOT_RECRUITING') THEN sp.nct_id END) AS active_trials,
+            COUNT(DISTINCT CASE WHEN s.overall_status = 'COMPLETED'
+                THEN sp.nct_id END)                                        AS completed_trials,
+            COUNT(DISTINCT CASE WHEN s.results_first_submitted_date IS NOT NULL
+                THEN sp.nct_id END)                                        AS with_results
+        FROM ctgov.sponsors sp
+        JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+        WHERE sp.lead_or_collaborator = 'lead'
+          AND sp.name IS NOT NULL
+          {scope_where}
+        GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_sponsor_phase_mix(filters: FilterState, limit: int = 15) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        WITH top_sponsors AS (
+            SELECT sp.name, COUNT(DISTINCT sp.nct_id) AS cnt
+            FROM ctgov.sponsors sp
+            JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+            WHERE sp.lead_or_collaborator = 'lead' AND sp.name IS NOT NULL
+              {scope_where}
+            GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
+        )
+        SELECT
+            sp.name                   AS sponsor,
+            COALESCE(s.phase,'N/A')   AS phase,
+            COUNT(DISTINCT sp.nct_id) AS trial_count
+        FROM ctgov.sponsors sp
+        JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+        JOIN top_sponsors ts ON ts.name = sp.name
+        WHERE sp.lead_or_collaborator = 'lead'
+          {scope_where}
+        GROUP BY 1, 2
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_sponsor_pro_adoption(filters: FilterState, limit: int = 15) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        WITH trial_pros AS (
+            SELECT DISTINCT p.nct_id FROM public.drug_trial_design_outcomes_pro p
+        ),
+        sponsor_totals AS (
+            SELECT sp.name, COUNT(DISTINCT sp.nct_id) AS total
+            FROM ctgov.sponsors sp
+            JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+            WHERE sp.lead_or_collaborator = 'lead' AND sp.name IS NOT NULL
+              {scope_where}
+            GROUP BY 1
+        ),
+        sponsor_pros AS (
+            SELECT sp.name, COUNT(DISTINCT sp.nct_id) AS pro_count
+            FROM ctgov.sponsors sp
+            JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+            JOIN trial_pros tp ON tp.nct_id = sp.nct_id
+            WHERE sp.lead_or_collaborator = 'lead'
+              {scope_where}
+            GROUP BY 1
+        )
+        SELECT
+            st.name AS sponsor,
+            st.total,
+            COALESCE(sp2.pro_count, 0) AS pro_trials,
+            ROUND(100.0 * COALESCE(sp2.pro_count, 0) / NULLIF(st.total, 0), 1) AS pct_with_pro
+        FROM sponsor_totals st
+        LEFT JOIN sponsor_pros sp2 ON sp2.name = st.name
+        ORDER BY st.total DESC LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_sponsor_endpoint_usage(filters: FilterState, limit: int = 10) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        WITH top_sponsors AS (
+            SELECT sp.name, COUNT(DISTINCT sp.nct_id) AS cnt
+            FROM ctgov.sponsors sp
+            JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+            WHERE sp.lead_or_collaborator = 'lead' {scope_where}
+            GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
+        )
+        SELECT
+            sp.name               AS sponsor,
+            oc.outcome_category   AS category,
+            COUNT(DISTINCT oc.nct_id) AS trial_count
+        FROM ctgov.sponsors sp
+        JOIN ctgov.studies s ON s.nct_id = sp.nct_id
+        JOIN public.drug_trial_outcome_categories oc ON oc.nct_id = sp.nct_id
+        JOIN top_sponsors ts ON ts.name = sp.name
+        WHERE sp.lead_or_collaborator = 'lead'
+          AND oc.outcome_category IS NOT NULL
+          {scope_where}
+        GROUP BY 1, 2
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  TRIAL DESIGN
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_trial_design_metrics(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            COALESCE(d.allocation, 'N/A')          AS allocation,
+            COALESCE(d.intervention_model, 'N/A')  AS intervention_model,
+            COALESCE(d.primary_purpose, 'N/A')     AS primary_purpose,
+            COUNT(DISTINCT d.nct_id)               AS trial_count
+        FROM ctgov.designs d
+        JOIN ctgov.studies s ON s.nct_id = d.nct_id
+        WHERE d.nct_id IS NOT NULL {scope_where}
+        GROUP BY 1, 2, 3
+        ORDER BY 4 DESC
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_arms_distribution(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    sql = f"""
+        SELECT
+            s.number_of_arms,
+            COUNT(DISTINCT s.nct_id) AS trial_count
+        FROM ctgov.studies s
+        WHERE {scope_clause}
+          AND s.number_of_arms IS NOT NULL
+        GROUP BY 1 ORDER BY 1
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_eligibility_distribution(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            COALESCE(e.gender, 'All')           AS gender,
+            e.adult,
+            e.child,
+            e.older_adult,
+            COUNT(DISTINCT e.nct_id)            AS trial_count
+        FROM ctgov.eligibilities e
+        JOIN ctgov.studies s ON s.nct_id = e.nct_id
+        WHERE e.nct_id IS NOT NULL {scope_where}
+        GROUP BY 1, 2, 3, 4
+        ORDER BY 5 DESC
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  PLANNED ENDPOINTS (design_outcomes)
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_design_outcomes(filters: FilterState, limit: int = MAX_TABLE_ROWS) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+
+    sql = f"""
+        SELECT
+            do_.outcome_type,
+            do_.measure,
+            do_.time_frame,
+            s.phase,
+            COUNT(DISTINCT do_.nct_id) AS trial_count
+        FROM ctgov.design_outcomes do_
+        JOIN ctgov.studies s ON s.nct_id = do_.nct_id
+        WHERE do_.measure IS NOT NULL
+          {scope_where}
+        GROUP BY 1, 2, 3, 4
+        ORDER BY 5 DESC
+        LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_design_outcome_type_dist(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            COALESCE(do_.outcome_type, 'other') AS outcome_type,
+            COUNT(*)                            AS endpoint_count,
+            COUNT(DISTINCT do_.nct_id)          AS trial_count
+        FROM ctgov.design_outcomes do_
+        JOIN ctgov.studies s ON s.nct_id = do_.nct_id
+        WHERE do_.nct_id IS NOT NULL {scope_where}
+        GROUP BY 1 ORDER BY 2 DESC
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_design_outcome_type_category_heatmap(filters: FilterState) -> pd.DataFrame:
+    """Pivoted DataFrame: rows=outcome_type, cols=outcome_category, values=unique trial count."""
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    ec_clause, ec_p = qb.endpoint_category_clause("dc")
+    params.update(ec_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    ec_where = f"AND {ec_clause}" if ec_clause else ""
+    sql = f"""
+        SELECT
+            COALESCE(do_.outcome_type, 'other') AS outcome_type,
+            dc.outcome_category,
+            COUNT(DISTINCT do_.nct_id)          AS trial_count
+        FROM ctgov.design_outcomes do_
+        JOIN public.drug_trial_design_outcome_categories dc ON dc.nct_id = do_.nct_id
+        JOIN ctgov.studies s ON s.nct_id = do_.nct_id
+        WHERE dc.outcome_category IS NOT NULL {scope_where} {ec_where}
+        GROUP BY 1, 2
+    """
+    df = query_aact(sql, params)
+    if df.empty:
+        return df
+    return df.pivot_table(
+        index="outcome_type", columns="outcome_category",
+        values="trial_count", fill_value=0,
+    )
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_planned_pro_usage(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    pi_clause, pi_p = qb.pro_instrument_clause("p")
+    params.update(pi_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    pi_where = f"AND {pi_clause}" if pi_clause else ""
+    sql = f"""
+        SELECT
+            p.instrument_name,
+            COUNT(DISTINCT p.nct_id) AS trial_count,
+            s.phase
+        FROM public.drug_trial_design_outcomes_pro p
+        JOIN ctgov.studies s ON s.nct_id = p.nct_id
+        WHERE p.instrument_name IS NOT NULL {scope_where} {pi_where}
+        GROUP BY 1, 3 ORDER BY 2 DESC LIMIT 30
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_top_design_endpoints(filters: FilterState, limit: int = 25) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    ec_clause, ec_p = qb.endpoint_category_clause("dc")
+    params.update(ec_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    ec_where = f"AND {ec_clause}" if ec_clause else ""
+    sql = f"""
+        SELECT
+            dc.outcome_category,
+            COUNT(DISTINCT dc.nct_id) AS trial_count
+        FROM public.drug_trial_design_outcome_categories dc
+        JOIN ctgov.studies s ON s.nct_id = dc.nct_id
+        WHERE dc.outcome_category IS NOT NULL {scope_where} {ec_where}
+        GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  REPORTED OUTCOMES
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_reported_outcome_categories(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    ec_clause, ec_p = qb.endpoint_category_clause("oc")
+    params.update(ec_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    ec_where = f"AND {ec_clause}" if ec_clause else ""
+    sql = f"""
+        SELECT
+            oc.outcome_category AS category,
+            COUNT(DISTINCT oc.outcome_id) AS outcome_count,
+            COUNT(DISTINCT oc.nct_id)     AS trial_count
+        FROM public.drug_trial_outcome_categories oc
+        JOIN ctgov.studies s ON s.nct_id = oc.nct_id
+        WHERE oc.outcome_category IS NOT NULL {scope_where} {ec_where}
+        GROUP BY 1 ORDER BY 2 DESC
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_reported_outcome_type_dist(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            COALESCE(o.outcome_type, 'OTHER') AS outcome_type,
+            COUNT(DISTINCT o.id)              AS outcome_count,
+            COUNT(DISTINCT o.nct_id)          AS trial_count
+        FROM ctgov.outcomes o
+        JOIN ctgov.studies s ON s.nct_id = o.nct_id
+        WHERE o.nct_id IS NOT NULL {scope_where}
+        GROUP BY 1 ORDER BY 2 DESC
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_outcome_type_category_heatmap(filters: FilterState) -> pd.DataFrame:
+    """Pivoted DataFrame: rows=outcome_type, cols=outcome_category, values=unique trial count."""
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    ec_clause, ec_p = qb.endpoint_category_clause("oc")
+    params.update(ec_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    ec_where = f"AND {ec_clause}" if ec_clause else ""
+    sql = f"""
+        SELECT
+            COALESCE(o.outcome_type, 'OTHER') AS outcome_type,
+            oc.outcome_category,
+            COUNT(DISTINCT o.nct_id)          AS trial_count
+        FROM ctgov.outcomes o
+        JOIN public.drug_trial_outcome_categories oc
+            ON oc.nct_id = o.nct_id AND oc.outcome_id = o.id
+        JOIN ctgov.studies s ON s.nct_id = o.nct_id
+        WHERE oc.outcome_category IS NOT NULL {scope_where} {ec_where}
+        GROUP BY 1, 2
+    """
+    df = query_aact(sql, params)
+    if df.empty:
+        return df
+    return df.pivot_table(
+        index="outcome_type", columns="outcome_category",
+        values="trial_count", fill_value=0,
+    )
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_top_outcome_titles(filters: FilterState, limit: int = 25) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            o.title,
+            o.outcome_type,
+            COUNT(DISTINCT o.nct_id) AS trial_count
+        FROM ctgov.outcomes o
+        JOIN ctgov.studies s ON s.nct_id = o.nct_id
+        WHERE o.title IS NOT NULL {scope_where}
+        GROUP BY 1, 2 ORDER BY 3 DESC LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_reported_pro_funnel(filters: FilterState) -> pd.DataFrame:
+    """Planned vs reported PRO funnel."""
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    pi_clause, pi_p = qb.pro_instrument_clause("p")
+    params.update(pi_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    pi_where = f"AND {pi_clause}" if pi_clause else ""
+    sql = f"""
+        SELECT
+            'Planned PROs'  AS stage,
+            COUNT(DISTINCT p.nct_id) AS trial_count
+        FROM public.drug_trial_design_outcomes_pro p
+        JOIN ctgov.studies s ON s.nct_id = p.nct_id
+        WHERE TRUE {scope_where} {pi_where}
+        UNION ALL
+        SELECT
+            'Reported PROs' AS stage,
+            COUNT(DISTINCT p.nct_id) AS trial_count
+        FROM public.drug_trial_outcomes_pro p
+        JOIN ctgov.studies s ON s.nct_id = p.nct_id
+        WHERE TRUE {scope_where} {pi_where}
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  OUTCOME SCORES
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_outcome_scores(filters: FilterState, categories: list,
+                        exclude_baseline: bool = True,
+                        limit: int = MAX_TABLE_ROWS) -> pd.DataFrame:
+    """
+    Fetch numeric outcome measurements joined to category and brand name.
+    Only rows where param_value_num is not null.
+    """
+    # Build a FilterState that includes categories for the endpoint_category_clause
+    fs_with_cats = FilterState(
+        indication_name=filters.indication_name,
+        atc_class_name=filters.atc_class_name,
+        phase=filters.phase,
+        overall_status=filters.overall_status,
+        enrollment_min=filters.enrollment_min,
+        enrollment_max=filters.enrollment_max,
+        has_results=filters.has_results,
+        sponsor=filters.sponsor,
+        country=filters.country,
+        brand_name=filters.brand_name,
+        endpoint_category=categories,
+    )
+    qb = QueryBuilder(fs_with_cats)
+    scope_clause, scope_p = qb.study_scope_clause("o")
+    cat_clause, cat_p     = qb.endpoint_category_clause("oc")
+    combined = QueryBuilder.combine([scope_clause, cat_clause])
+    nct_where = f"AND {combined}" if combined else ""
+    params = QueryBuilder.merge_params(scope_p, cat_p)
+
+    baseline_filter = """
+        AND LOWER(COALESCE(om.classification, '')) NOT IN (
+            'baseline','cycle 1 day 1','week 1 day 1','month 1 day 1',
+            'day 1','pre-dose','pre-treatment','screening'
+        )
+    """ if exclude_baseline else ""
+
+    sql = f"""
+        SELECT
+            om.outcome_id,
+            om.title                AS outcome_title,
+            om.units,
+            om.param_type,
+            om.param_value_num,
+            om.dispersion_value_num,
+            om.classification,
+            om.result_group_id,
+            oc.outcome_category AS category,
+            dt.brand_name,
+            o.nct_id
+        FROM ctgov.outcome_measurements om
+        JOIN ctgov.outcomes o ON o.id::text = om.outcome_id::text
+        JOIN public.drug_trial_outcome_categories oc
+               ON oc.outcome_id::text = om.outcome_id::text
+        JOIN public.drug_trials dt ON dt.nct_id = o.nct_id
+        WHERE om.param_value_num IS NOT NULL
+          {baseline_filter}
+          {nct_where}
+        ORDER BY om.param_value_num DESC
+        LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_score_by_drug(filters: FilterState, category: str,
+                       exclude_baseline: bool = True) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("o")
+    nct_where = f"AND {scope_clause}" if scope_clause else ""
+    params["cat"] = category
+    baseline_filter = """
+        AND LOWER(COALESCE(om.classification,'')) NOT IN (
+            'baseline','cycle 1 day 1','week 1 day 1','day 1','pre-dose'
+        )
+    """ if exclude_baseline else ""
+    sql = f"""
+        SELECT
+            dt.brand_name,
+            PERCENTILE_CONT(0.5) WITHIN GROUP
+                (ORDER BY om.param_value_num) AS median_score,
+            AVG(om.param_value_num)           AS mean_score,
+            COUNT(*)                          AS n_measurements,
+            MIN(om.param_value_num)           AS min_score,
+            MAX(om.param_value_num)           AS max_score
+        FROM ctgov.outcome_measurements om
+        JOIN ctgov.outcomes o ON o.id::text = om.outcome_id::text
+        JOIN public.drug_trial_outcome_categories oc
+               ON oc.outcome_id::text = om.outcome_id::text
+        JOIN public.drug_trials dt ON dt.nct_id = o.nct_id
+        WHERE oc.outcome_category = :cat
+          AND om.param_value_num IS NOT NULL
+          {baseline_filter}
+          {nct_where}
+        GROUP BY 1 ORDER BY 2 DESC LIMIT 20
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  PRO OVERVIEW
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pro_usage(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    pi_clause_p, pi_p = qb.pro_instrument_clause("p")
+    pi_clause_r, _    = qb.pro_instrument_clause("r")  # same params as pi_clause_p
+    params.update(pi_p)
+    scope_where  = f"AND {scope_clause}" if scope_clause else ""
+    pi_where_p   = f"AND {pi_clause_p}" if pi_clause_p else ""
+    pi_where_r   = f"AND {pi_clause_r}" if pi_clause_r else ""
+    sql = f"""
+        SELECT
+            p.instrument_name,
+            COUNT(DISTINCT p.nct_id)  AS planned_count,
+            0                         AS reported_count
+        FROM public.drug_trial_design_outcomes_pro p
+        JOIN ctgov.studies s ON s.nct_id = p.nct_id
+        WHERE p.instrument_name IS NOT NULL {scope_where} {pi_where_p}
+        GROUP BY 1
+        UNION ALL
+        SELECT
+            r.instrument_name,
+            0                         AS planned_count,
+            COUNT(DISTINCT r.nct_id)  AS reported_count
+        FROM public.drug_trial_outcomes_pro r
+        JOIN ctgov.studies s ON s.nct_id = r.nct_id
+        WHERE r.instrument_name IS NOT NULL {scope_where} {pi_where_r}
+        GROUP BY 1
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pro_by_sponsor(filters: FilterState, limit: int = 15) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    pi_clause, pi_p = qb.pro_instrument_clause("p")
+    params.update(pi_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    pi_where = f"AND {pi_clause}" if pi_clause else ""
+    sql = f"""
+        WITH sponsor_totals AS (
+            SELECT sp.name AS sponsor,
+                   COUNT(DISTINCT p.nct_id) AS sponsor_total
+            FROM public.drug_trial_design_outcomes_pro p
+            JOIN ctgov.studies s ON s.nct_id = p.nct_id
+            JOIN ctgov.sponsors sp ON sp.nct_id = s.nct_id
+                   AND sp.lead_or_collaborator = 'lead'
+            WHERE p.instrument_name IS NOT NULL {scope_where} {pi_where}
+            GROUP BY 1
+        )
+        SELECT
+            sp.name             AS sponsor,
+            p.instrument_name,
+            COUNT(DISTINCT p.nct_id) AS trial_count,
+            st.sponsor_total
+        FROM public.drug_trial_design_outcomes_pro p
+        JOIN ctgov.studies s ON s.nct_id = p.nct_id
+        JOIN ctgov.sponsors sp ON sp.nct_id = s.nct_id
+               AND sp.lead_or_collaborator = 'lead'
+        JOIN sponsor_totals st ON st.sponsor = sp.name
+        WHERE p.instrument_name IS NOT NULL {scope_where} {pi_where}
+        GROUP BY 1, 2, st.sponsor_total
+        ORDER BY 4 DESC, 3 DESC LIMIT {limit * 5}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pro_by_phase(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    pi_clause, pi_p = qb.pro_instrument_clause("p")
+    params.update(pi_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    pi_where = f"AND {pi_clause}" if pi_clause else ""
+    sql = f"""
+        SELECT
+            COALESCE(s.phase,'N/A') AS phase,
+            COUNT(DISTINCT p.nct_id) AS pro_trials
+        FROM public.drug_trial_design_outcomes_pro p
+        JOIN ctgov.studies s ON s.nct_id = p.nct_id
+        WHERE TRUE {scope_where} {pi_where}
+        GROUP BY 1 ORDER BY 2 DESC
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  PRO DOMAINS
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pro_domains(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    pi_clause, pi_p = qb.pro_instrument_clause("d")
+    pd_clause, pd_p = qb.pro_domain_clause("d")
+    params.update(pi_p)
+    params.update(pd_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    pi_where = f"AND {pi_clause}" if pi_clause else ""
+    pd_where = f"AND {pd_clause}" if pd_clause else ""
+    sql = f"""
+        SELECT
+            d.criteria         AS domain,
+            d.instrument_name,
+            COUNT(DISTINCT d.nct_id) AS trial_count,
+            COUNT(DISTINCT d.brand_name) AS drug_count
+        FROM public.domain_score_match d
+        JOIN ctgov.studies s ON s.nct_id = d.nct_id
+        WHERE d.criteria IS NOT NULL {scope_where} {pi_where} {pd_where}
+        GROUP BY 1, 2
+        ORDER BY 3 DESC
+        LIMIT 200
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_domain_instrument_heatmap(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    pi_clause, pi_p = qb.pro_instrument_clause("d")
+    pd_clause, pd_p = qb.pro_domain_clause("d")
+    params.update(pi_p)
+    params.update(pd_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    pi_where = f"AND {pi_clause}" if pi_clause else ""
+    pd_where = f"AND {pd_clause}" if pd_clause else ""
+    sql = f"""
+        WITH top_instruments AS (
+            SELECT instrument_name, COUNT(DISTINCT nct_id) AS cnt
+            FROM public.domain_score_match
+            GROUP BY 1 ORDER BY 2 DESC LIMIT 12
+        ),
+        top_domains AS (
+            SELECT criteria, COUNT(DISTINCT nct_id) AS cnt
+            FROM public.domain_score_match
+            WHERE criteria IS NOT NULL
+            GROUP BY 1 ORDER BY 2 DESC LIMIT 12
+        )
+        SELECT
+            d.instrument_name,
+            d.criteria   AS domain,
+            COUNT(DISTINCT d.nct_id) AS trial_count
+        FROM public.domain_score_match d
+        JOIN ctgov.studies s ON s.nct_id = d.nct_id
+        JOIN top_instruments ti ON ti.instrument_name = d.instrument_name
+        JOIN top_domains td ON td.criteria = d.criteria
+        WHERE d.criteria IS NOT NULL {scope_where} {pi_where} {pd_where}
+        GROUP BY 1, 2
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_domain_by_drug(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    pi_clause, pi_p = qb.pro_instrument_clause("d")
+    pd_clause, pd_p = qb.pro_domain_clause("d")
+    params.update(pi_p)
+    params.update(pd_p)
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    pi_where = f"AND {pi_clause}" if pi_clause else ""
+    pd_where = f"AND {pd_clause}" if pd_clause else ""
+    sql = f"""
+        SELECT
+            d.brand_name,
+            d.criteria   AS domain,
+            COUNT(DISTINCT d.nct_id) AS trial_count
+        FROM public.domain_score_match d
+        JOIN ctgov.studies s ON s.nct_id = d.nct_id
+        WHERE d.criteria IS NOT NULL
+          AND d.brand_name IS NOT NULL {scope_where} {pi_where} {pd_where}
+        GROUP BY 1, 2
+        ORDER BY 3 DESC LIMIT 200
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  TRIAL GROUPS
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_trial_groups(filters: FilterState, limit: int = MAX_TABLE_ROWS) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            dg.nct_id,
+            dg.group_type,
+            dg.title       AS group_title,
+            i.name         AS intervention_name,
+            i.intervention_type,
+            s.phase,
+            s.overall_status
+        FROM ctgov.design_groups dg
+        JOIN ctgov.design_group_interventions dgi ON dgi.design_group_id = dg.id
+        JOIN ctgov.interventions i ON i.id = dgi.intervention_id
+        JOIN ctgov.studies s ON s.nct_id = dg.nct_id
+        WHERE dg.nct_id IS NOT NULL {scope_where}
+        ORDER BY dg.nct_id, dg.group_type
+        LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_result_groups(filters: FilterState, limit: int = MAX_TABLE_ROWS) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            rg.nct_id,
+            rg.ctgov_group_code,
+            rg.result_type,
+            rg.title,
+            drg.brand_name,
+            s.phase,
+            s.overall_status
+        FROM ctgov.result_groups rg
+        JOIN ctgov.studies s ON s.nct_id = rg.nct_id
+        LEFT JOIN public.drug_result_groups drg
+               ON drg.nct_id = rg.nct_id
+               AND drg.result_group_id::text = rg.id::text
+        WHERE rg.nct_id IS NOT NULL {scope_where}
+        ORDER BY rg.nct_id, rg.ctgov_group_code
+        LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_groups_per_trial_dist(filters: FilterState) -> pd.DataFrame:
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    scope_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            groups_per_trial,
+            COUNT(*) AS trial_count
+        FROM (
+            SELECT dg.nct_id, COUNT(DISTINCT dg.id) AS groups_per_trial
+            FROM ctgov.design_groups dg
+            JOIN ctgov.studies s ON s.nct_id = dg.nct_id
+            WHERE dg.nct_id IS NOT NULL {scope_where}
+            GROUP BY 1
+        ) t
+        GROUP BY 1 ORDER BY 1
+    """
+    return query_aact(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  SAFETY / ADVERSE EVENTS
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=900, show_spinner=False)
+def get_ae_aggregates(filters: FilterState) -> dict:
+    """
+    Single-query replacement for three separate calls:
+      get_adverse_event_summary  → result["kpis"]   (dict)
+      get_top_adverse_events     → result["top_ae"]  (DataFrame, top 25 by trial_count)
+      get_ae_by_organ_system     → result["organ"]   (DataFrame, top 50 by trial_count)
+
+    Uses one DB round-trip with a shared ae_filtered CTE so reported_events is
+    scanned only once per filter combination.
+    """
+    import json
+
+    _empty: dict = {
+        "kpis": {
+            "trials_with_ae": 0, "total_ae_records": 0,
+            "unique_ae_terms": 0, "unique_organ_systems": 0,
+            "total_subjects_affected": 0,
+        },
+        "top_ae": pd.DataFrame(),
+        "organ":  pd.DataFrame(),
+    }
+    if not filters.has_any_filter():
+        return _empty
+
+    qb = QueryBuilder(filters)
+    cte_sql, params = qb.ae_scope_cte()
+    scope_join = "JOIN scope_nct ON scope_nct.nct_id = re.nct_id" if cte_sql else ""
+
+    sql = f"""
+        {cte_sql}{"," if cte_sql else "WITH"} ae_filtered AS (
+            SELECT re.nct_id, re.adverse_event_term, re.organ_system,
+                   re.subjects_affected, re.event_count
+            FROM ctgov.reported_events re
+            {scope_join}
+            WHERE re.subjects_affected > 0
+              AND re.adverse_event_term IS NOT NULL
+        )
+        SELECT 'kpi' AS _rs, row_to_json(k.*)::text AS data
+        FROM (
+            SELECT
+                COUNT(DISTINCT nct_id)             AS trials_with_ae,
+                COUNT(*)                           AS total_ae_records,
+                COUNT(DISTINCT adverse_event_term) AS unique_ae_terms,
+                COUNT(DISTINCT organ_system)       AS unique_organ_systems,
+                SUM(subjects_affected)             AS total_subjects_affected
+            FROM ae_filtered
+        ) k
+        UNION ALL
+        SELECT 'top_terms', row_to_json(t.*)::text
+        FROM (
+            SELECT adverse_event_term, organ_system,
+                   COUNT(DISTINCT nct_id)  AS trial_count,
+                   SUM(subjects_affected)  AS total_affected,
+                   SUM(event_count)        AS total_events
+            FROM ae_filtered
+            GROUP BY 1, 2
+            ORDER BY 3 DESC, 4 DESC
+            LIMIT 25
+        ) t
+        UNION ALL
+        SELECT 'organ_systems', row_to_json(o.*)::text
+        FROM (
+            SELECT COALESCE(organ_system, 'Unknown') AS organ_system,
+                   COUNT(DISTINCT nct_id)            AS trial_count,
+                   COUNT(DISTINCT adverse_event_term) AS unique_terms,
+                   SUM(subjects_affected)             AS total_affected
+            FROM ae_filtered
+            GROUP BY 1
+            ORDER BY 2 DESC, 4 DESC
+            LIMIT 50
+        ) o
+    """
+    raw = query_aact_ae(sql, params)
+    if raw.empty:
+        return _empty
+
+    result: dict = dict(_empty)
+    for rs, group in raw.groupby("_rs"):
+        rows = [json.loads(r) for r in group["data"]]
+        if rs == "kpi":
+            r = rows[0] if rows else {}
+            result["kpis"] = {
+                "trials_with_ae":          int(r.get("trials_with_ae",          0) or 0),
+                "total_ae_records":        int(r.get("total_ae_records",         0) or 0),
+                "unique_ae_terms":         int(r.get("unique_ae_terms",          0) or 0),
+                "unique_organ_systems":    int(r.get("unique_organ_systems",     0) or 0),
+                "total_subjects_affected": int(r.get("total_subjects_affected",  0) or 0),
+            }
+        elif rs == "top_terms":
+            result["top_ae"] = pd.DataFrame(rows)
+        elif rs == "organ_systems":
+            result["organ"] = pd.DataFrame(rows)
+    return result
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def get_adverse_event_summary(filters: FilterState) -> dict:
+    """KPIs for the safety page."""
+    if not filters.has_any_filter():
+        return {
+            "trials_with_ae": 0, "total_ae_records": 0,
+            "unique_ae_terms": 0, "unique_organ_systems": 0,
+            "total_subjects_affected": 0,
+        }
+    qb = QueryBuilder(filters)
+    cte_sql, params = qb.ae_scope_cte()
+    scope_join = "JOIN scope_nct ON scope_nct.nct_id = re.nct_id" if cte_sql else ""
+
+    sql = f"""
+        {cte_sql}{"," if cte_sql else "WITH"} ae_base AS (
+            SELECT re.nct_id, re.adverse_event_term, re.organ_system,
+                   re.subjects_affected, re.subjects_at_risk, re.event_count
+            FROM ctgov.reported_events re
+            {scope_join}
+            WHERE re.subjects_affected > 0
+              AND re.adverse_event_term IS NOT NULL
+        )
+        SELECT
+            COUNT(DISTINCT re.nct_id)             AS trials_with_ae,
+            COUNT(*)                              AS total_ae_records,
+            COUNT(DISTINCT re.adverse_event_term) AS unique_ae_terms,
+            COUNT(DISTINCT re.organ_system)       AS unique_organ_systems,
+            SUM(re.subjects_affected)             AS total_subjects_affected
+        FROM ae_base re
+    """
+    df = query_aact_ae(sql, params)
+    row = df.iloc[0] if not df.empty else {}
+    return {
+        "trials_with_ae":        int(row.get("trials_with_ae",          0) or 0),
+        "total_ae_records":      int(row.get("total_ae_records",         0) or 0),
+        "unique_ae_terms":       int(row.get("unique_ae_terms",          0) or 0),
+        "unique_organ_systems":  int(row.get("unique_organ_systems",     0) or 0),
+        "total_subjects_affected": int(row.get("total_subjects_affected",0) or 0),
+    }
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def get_top_adverse_events(filters: FilterState, limit: int = 25) -> pd.DataFrame:
+    if not filters.has_any_filter():
+        return pd.DataFrame()
+    qb = QueryBuilder(filters)
+    cte_sql, params = qb.ae_scope_cte()
+    scope_join = "JOIN scope_nct ON scope_nct.nct_id = re.nct_id" if cte_sql else ""
+    sql = f"""
+        {cte_sql}
+        SELECT
+            re.adverse_event_term,
+            re.organ_system,
+            COUNT(DISTINCT re.nct_id)  AS trial_count,
+            SUM(re.subjects_affected)  AS total_affected,
+            SUM(re.event_count)        AS total_events
+        FROM ctgov.reported_events re
+        {scope_join}
+        WHERE re.subjects_affected > 0
+          AND re.adverse_event_term IS NOT NULL
+        GROUP BY 1, 2
+        ORDER BY 3 DESC, 4 DESC
+        LIMIT {limit}
+    """
+    return query_aact_ae(sql, params)
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def get_ae_by_organ_system(filters: FilterState) -> pd.DataFrame:
+    if not filters.has_any_filter():
+        return pd.DataFrame()
+    qb = QueryBuilder(filters)
+    cte_sql, params = qb.ae_scope_cte()
+    scope_join = "JOIN scope_nct ON scope_nct.nct_id = re.nct_id" if cte_sql else ""
+    sql = f"""
+        {cte_sql}
+        SELECT
+            COALESCE(re.organ_system,'Unknown') AS organ_system,
+            COUNT(DISTINCT re.nct_id)           AS trial_count,
+            COUNT(DISTINCT re.adverse_event_term) AS unique_terms,
+            SUM(re.subjects_affected)            AS total_affected
+        FROM ctgov.reported_events re
+        {scope_join}
+        WHERE re.subjects_affected > 0
+        GROUP BY 1 ORDER BY 2 DESC, 4 DESC
+        LIMIT 50
+    """
+    return query_aact_ae(sql, params)
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def get_ae_by_drug(filters: FilterState, limit: int = 20) -> pd.DataFrame:
+    """Adverse events per drug, using drug_result_groups to link drug → result group."""
+    if not filters.has_any_filter():
+        return pd.DataFrame()
+    qb = QueryBuilder(filters)
+    cte_sql, params = qb.ae_scope_cte()
+    scope_join = "JOIN scope_nct ON scope_nct.nct_id = re.nct_id" if cte_sql else ""
+    sql = f"""
+        {cte_sql}
+        SELECT
+            drg.brand_name,
+            COUNT(DISTINCT re.nct_id)             AS trial_count,
+            COUNT(DISTINCT re.adverse_event_term) AS unique_terms,
+            SUM(re.subjects_affected)             AS total_affected
+        FROM ctgov.reported_events re
+        {scope_join}
+        JOIN public.drug_result_groups drg
+               ON drg.nct_id = re.nct_id
+               AND drg.result_group_id::text = re.result_group_id::text
+        WHERE re.subjects_affected > 0
+          AND drg.brand_name IS NOT NULL
+        GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
+    """
+    return query_aact_ae(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ae_detail_table(filters: FilterState,
+                         organ_system: str | None = None,
+                         ae_term: str | None = None,
+                         limit: int = MAX_TABLE_ROWS) -> pd.DataFrame:
+    """Full adverse event detail table with drug linkage."""
+    if not filters.has_any_filter():
+        return pd.DataFrame()
+    qb = QueryBuilder(filters)
+    cte_sql, params = qb.ae_scope_cte()
+    params = dict(params)
+    scope_join = "JOIN scope_nct ON scope_nct.nct_id = re.nct_id" if cte_sql else ""
+
+    extra = ""
+    if organ_system:
+        extra += " AND re.organ_system = :organ_system"
+        params["organ_system"] = organ_system
+    if ae_term:
+        extra += " AND re.adverse_event_term = :ae_term"
+        params["ae_term"] = ae_term
+
+    sql = f"""
+        {cte_sql}
+        SELECT
+            re.nct_id,
+            re.adverse_event_term,
+            re.organ_system,
+            re.subjects_affected,
+            re.subjects_at_risk,
+            re.event_count,
+            drg.brand_name,
+            sp.name          AS sponsor,
+            s.phase,
+            s.overall_status
+        FROM ctgov.reported_events re
+        {scope_join}
+        JOIN ctgov.studies s ON s.nct_id = re.nct_id
+        LEFT JOIN public.drug_result_groups drg
+               ON drg.nct_id = re.nct_id
+               AND drg.result_group_id::text = re.result_group_id::text
+        LEFT JOIN ctgov.sponsors sp
+               ON sp.nct_id = s.nct_id AND sp.lead_or_collaborator = 'lead'
+        WHERE re.subjects_affected > 0
+          AND re.adverse_event_term IS NOT NULL
+          {extra}
+        ORDER BY re.subjects_affected DESC
+        LIMIT {limit}
+    """
+    return query_aact_ae(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  DRUGS DB  – indication / atc_class option queries
+# ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_indication_options() -> list[str]:
+    """
+    Returns distinct MeSH mesh_term values (mesh-list type only) from
+    ctgov.browse_conditions, scoped to trials present in public.drug_trials.
+    These are the options for the global Indication filter.
+    """
+    from config.settings import (
+        BROWSE_CONDITIONS_TABLE,
+        BROWSE_CONDITIONS_MESH_TERM,
+        BROWSE_CONDITIONS_MESH_TYPE,
+        BROWSE_CONDITIONS_MESH_LIST,
+    )
+    sql = f"""
+        SELECT DISTINCT bc.{BROWSE_CONDITIONS_MESH_TERM}
+        FROM {BROWSE_CONDITIONS_TABLE} bc
+        JOIN public.drug_trials dt ON dt.nct_id = bc.nct_id
+        WHERE bc.{BROWSE_CONDITIONS_MESH_TYPE} = '{BROWSE_CONDITIONS_MESH_LIST}'
+          AND bc.{BROWSE_CONDITIONS_MESH_TERM} IS NOT NULL
+        ORDER BY 1
+        LIMIT 3000
+    """
+    df = query_aact(sql)
+    if df.empty:
+        return []
+    return df.iloc[:, 0].dropna().tolist()
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_atc_class_options() -> list[str]:
+    from data.db import query_drugs
+    from config.settings import DRUG_CLASSES_TABLE, DRUGS_ATC_COL
+    sql = f"""
+        SELECT DISTINCT {DRUGS_ATC_COL}
+        FROM {DRUG_CLASSES_TABLE}
+        WHERE {DRUGS_ATC_COL} IS NOT NULL
+        ORDER BY 1
+    """
+    df = query_drugs(sql)
+    if df.empty:
+        return []
+    return df.iloc[:, 0].dropna().tolist()
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def get_brand_options_from_drugs(indication: str | None, atc_class: str | None) -> list[str]:
+    """
+    Return brand names available for the Drug Detail page selector, scoped by
+    the active global filters.
+
+    indication is a ctgov.browse_conditions mesh_term (AACT DB) — NOT a
+    drug_indications.indication_name value.  When indication is set, brands are
+    derived from public.drug_trials JOIN ctgov.browse_conditions.
+    atc_class is still resolved via public.drug_classes (DRUGS DB).
+    """
+    from config.settings import (
+        DRUG_CLASSES_TABLE, DRUGS_BRAND_COL, DRUGS_ATC_COL,
+        BROWSE_CONDITIONS_TABLE, BROWSE_CONDITIONS_MESH_TERM,
+        BROWSE_CONDITIONS_MESH_TYPE, BROWSE_CONDITIONS_MESH_LIST,
+    )
+
+    if indication and atc_class:
+        # Step 1: resolve ATC brands from DRUGS DB
+        from data.db import query_drugs
+        atc_sql = f"""
+            SELECT DISTINCT {DRUGS_BRAND_COL} AS brand_name
+            FROM {DRUG_CLASSES_TABLE}
+            WHERE {DRUGS_ATC_COL} = :atc
+              AND {DRUGS_BRAND_COL} IS NOT NULL
+            LIMIT 2000
+        """
+        atc_df = query_drugs(atc_sql, {"atc": atc_class})
+        atc_brands = atc_df["brand_name"].dropna().tolist() if not atc_df.empty else []
+        if not atc_brands:
+            return []
+        # Step 2: intersect with browse_conditions scope in AACT
+        ph = ", ".join(f":bn_{i}" for i in range(len(atc_brands)))
+        params: dict = {f"bn_{i}": b for i, b in enumerate(atc_brands)}
+        params["bc_ind"] = indication
+        sql = f"""
+            SELECT DISTINCT dt.brand_name
+            FROM public.drug_trials dt
+            JOIN {BROWSE_CONDITIONS_TABLE} bc ON bc.nct_id = dt.nct_id
+            WHERE bc.{BROWSE_CONDITIONS_MESH_TYPE} = '{BROWSE_CONDITIONS_MESH_LIST}'
+              AND bc.{BROWSE_CONDITIONS_MESH_TERM} = :bc_ind
+              AND dt.brand_name IN ({ph})
+              AND dt.brand_name IS NOT NULL
+            ORDER BY 1 LIMIT 300
+        """
+        df = query_aact(sql, params)
+
+    elif indication:
+        # Scope via browse_conditions JOIN drug_trials in AACT
+        sql = f"""
+            SELECT DISTINCT dt.brand_name
+            FROM public.drug_trials dt
+            JOIN {BROWSE_CONDITIONS_TABLE} bc ON bc.nct_id = dt.nct_id
+            WHERE bc.{BROWSE_CONDITIONS_MESH_TYPE} = '{BROWSE_CONDITIONS_MESH_LIST}'
+              AND bc.{BROWSE_CONDITIONS_MESH_TERM} = :bc_ind
+              AND dt.brand_name IS NOT NULL
+            ORDER BY 1 LIMIT 300
+        """
+        df = query_aact(sql, {"bc_ind": indication})
+
+    elif atc_class:
+        from data.db import query_drugs
+        sql = f"""
+            SELECT DISTINCT {DRUGS_BRAND_COL}
+            FROM {DRUG_CLASSES_TABLE}
+            WHERE {DRUGS_ATC_COL} = :atc
+              AND {DRUGS_BRAND_COL} IS NOT NULL
+            ORDER BY 1 LIMIT 300
+        """
+        df = query_drugs(sql, {"atc": atc_class})
+
+    else:
+        # No global filters — all brands present in drug_trials
+        sql = """
+            SELECT DISTINCT brand_name
+            FROM public.drug_trials
+            WHERE brand_name IS NOT NULL
+            ORDER BY 1 LIMIT 300
+        """
+        df = query_aact(sql)
+
+    if df.empty:
+        return []
+    return df.iloc[:, 0].dropna().tolist()
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  NL QUERY (uncached)
+# ════════════════════════════════════════════════════════════════════════════
+
+def run_nl_query(sql: str) -> pd.DataFrame:
+    """Execute a user-confirmed NL-generated SQL query (no cache)."""
+    return query_aact_uncached(sql)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  PRICING  (annual_pricing_table + historical_pricing)
+# ════════════════════════════════════════════════════════════════════════════
+
+def _get_pricing_brand_list(filters: FilterState) -> list[str]:
+    """
+    Resolve an effective brand name list for pricing queries.
+
+    Priority:
+      1. Explicit brand_name filter
+      2. ATC class → drug_classes lookup
+      3. Indication → drug_indications lookup (best-effort)
+      4. Empty list  → no brand filter, show all pricing data
+    """
+    if filters.brand_name:
+        return list(filters.brand_name)
+
+    if filters.atc_class_name:
+        sql = f"""
+            SELECT DISTINCT {DRUGS_BRAND_COL}
+            FROM {DRUG_CLASSES_TABLE}
+            WHERE {DRUGS_ATC_COL} = :atc
+              AND {DRUGS_BRAND_COL} IS NOT NULL
+            ORDER BY 1
+        """
+        df = query_drugs(sql, {"atc": filters.atc_class_name})
+        return df.iloc[:, 0].dropna().tolist() if not df.empty else []
+
+    if filters.indication_name:
+        from config.settings import (
+            BROWSE_CONDITIONS_TABLE,
+            BROWSE_CONDITIONS_MESH_TERM,
+            BROWSE_CONDITIONS_MESH_TYPE,
+            BROWSE_CONDITIONS_MESH_LIST,
+        )
+        sql = f"""
+            SELECT DISTINCT dt.brand_name
+            FROM public.drug_trials dt
+            JOIN {BROWSE_CONDITIONS_TABLE} bc ON bc.nct_id = dt.nct_id
+            WHERE bc.{BROWSE_CONDITIONS_MESH_TYPE} = '{BROWSE_CONDITIONS_MESH_LIST}'
+              AND bc.{BROWSE_CONDITIONS_MESH_TERM} = :ind
+              AND dt.brand_name IS NOT NULL
+            ORDER BY 1
+        """
+        df = query_aact(sql, {"ind": filters.indication_name})
+        return df.iloc[:, 0].dropna().tolist() if not df.empty else []
+
+    return []
+
+
+def _build_pricing_where(
+    brands: list[str],
+    drug_indication: str | None,
+    *,
+    include_disease: bool = True,
+) -> tuple[str, dict]:
+    """
+    Build a parameterized WHERE clause for annual_pricing_table queries.
+
+    Returns (clause_string, params_dict).  The clause never starts with WHERE
+    so callers can prepend it however they like.
+    """
+    # Exclude outlier rows where annual cost exceeds $1M
+    clauses: list[str] = ["total_cost_filled <= 1000000"]
+    params: dict = {}
+
+    if brands:
+        clauses.append("LOWER(brand_name) = ANY(:brands)")
+        params["brands"] = [b.lower() for b in brands]
+
+    if include_disease and drug_indication:
+        clauses.append("LOWER(TRIM(disease)) = :drug_indication")
+        params["drug_indication"] = drug_indication.lower().strip()
+
+    return (" AND ".join(clauses), params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pricing_kpis(filters: FilterState) -> dict:
+    """KPI summary for the Drug Pricing page."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_pricing_where(brands, filters.drug_indication)
+
+    sql_main = f"""
+        SELECT
+            COUNT(DISTINCT brand_name)              AS unique_drugs,
+            COUNT(DISTINCT dosage_form)             AS dosage_forms,
+            COUNT(DISTINCT LOWER(TRIM(disease)))    AS unique_diseases,
+            MAX(quarter_start)                      AS latest_quarter
+        FROM {ANNUAL_PRICING_TABLE}
+        WHERE {where}
+    """
+    df = query_pricing(sql_main, params)
+    if df.empty or df.iloc[0]["unique_drugs"] is None:
+        return {
+            "unique_drugs": 0, "dosage_forms": 0,
+            "unique_diseases": 0, "latest_total_cost": None,
+            "latest_quarter": None, "price_change_pct": None,
+        }
+
+    row = df.iloc[0]
+    latest_qtr = row["latest_quarter"]
+
+    # Average cost per drug for latest quarter
+    sql_latest = f"""
+        SELECT COALESCE(AVG(total_cost_filled), 0) AS avg_cost
+        FROM {ANNUAL_PRICING_TABLE}
+        WHERE {where}
+          AND quarter_start = :latest_qtr
+    """
+    p_latest = {**params, "latest_qtr": latest_qtr}
+    df_latest = query_pricing(sql_latest, p_latest)
+    latest_avg_cost = float(df_latest.iloc[0]["avg_cost"]) if not df_latest.empty else None
+
+    # Average cost one year prior (for YoY delta)
+    price_change_pct = None
+    if latest_qtr is not None:
+        try:
+            import datetime
+            prior_qtr = latest_qtr - datetime.timedelta(days=365)
+            sql_prior = f"""
+                SELECT COALESCE(AVG(total_cost_filled), 0) AS avg_cost
+                FROM {ANNUAL_PRICING_TABLE}
+                WHERE {where}
+                  AND quarter_start = :prior_qtr
+            """
+            p_prior = {**params, "prior_qtr": prior_qtr}
+            df_prior = query_pricing(sql_prior, p_prior)
+            if not df_prior.empty:
+                prior_avg_cost = float(df_prior.iloc[0]["avg_cost"])
+                if prior_avg_cost and prior_avg_cost != 0:
+                    price_change_pct = ((latest_avg_cost - prior_avg_cost) / prior_avg_cost) * 100
+        except Exception:
+            pass
+
+    return {
+        "unique_drugs":       int(row["unique_drugs"]),
+        "dosage_forms":       int(row["dosage_forms"]),
+        "unique_diseases":    int(row["unique_diseases"]),
+        "latest_avg_cost":    latest_avg_cost,
+        "latest_quarter":     str(latest_qtr)[:10] if latest_qtr else None,
+        "price_change_pct":   price_change_pct,
+    }
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_annual_cost_over_time(filters: FilterState) -> pd.DataFrame:
+    """Total annual cost aggregated by quarter, for the active filter scope."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_pricing_where(brands, filters.drug_indication)
+    sql = f"""
+        SELECT
+            quarter_start,
+            SUM(total_cost_filled) AS total_cost
+        FROM {ANNUAL_PRICING_TABLE}
+        WHERE {where}
+        GROUP BY quarter_start
+        ORDER BY quarter_start
+    """
+    return query_pricing(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_annual_cost_per_brand_over_time(filters: FilterState) -> pd.DataFrame:
+    """Annual cost per brand per quarter — used for the per-drug step-line chart."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_pricing_where(brands, filters.drug_indication)
+    sql = f"""
+        SELECT
+            brand_name,
+            quarter_start,
+            SUM(total_cost_filled) AS total_cost
+        FROM {ANNUAL_PRICING_TABLE}
+        WHERE {where}
+        GROUP BY brand_name, quarter_start
+        ORDER BY quarter_start, brand_name
+    """
+    return query_pricing(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_annual_cost_by_dosage_form(filters: FilterState) -> pd.DataFrame:
+    """Annual cost broken down by dosage form over time."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_pricing_where(brands, filters.drug_indication)
+    sql = f"""
+        SELECT
+            COALESCE(dosage_form, 'Unknown') AS dosage_form,
+            quarter_start,
+            SUM(total_cost_filled) AS total_cost
+        FROM {ANNUAL_PRICING_TABLE}
+        WHERE {where}
+        GROUP BY dosage_form, quarter_start
+        ORDER BY quarter_start
+    """
+    return query_pricing(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_annual_cost_by_disease(filters: FilterState) -> pd.DataFrame:
+    """Total cost per disease/indication, for the active filter scope."""
+    brands = _get_pricing_brand_list(filters)
+    # For disease breakdown we intentionally ignore the drug_indication filter
+    # so users can see the full disease split even when no indication is chosen.
+    where, params = _build_pricing_where(brands, None, include_disease=False)
+    sql = f"""
+        SELECT
+            COALESCE(LOWER(TRIM(disease)), 'unknown') AS disease,
+            SUM(total_cost_filled) AS total_cost
+        FROM {ANNUAL_PRICING_TABLE}
+        WHERE {where}
+        GROUP BY LOWER(TRIM(disease))
+        ORDER BY total_cost DESC
+        LIMIT 20
+    """
+    return query_pricing(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_wac_price_history(filters: FilterState) -> pd.DataFrame:
+    """WAC unit price history from historical_pricing — one row per NDC per effective date."""
+    brands = _get_pricing_brand_list(filters)
+    if brands:
+        brand_clause = "AND LOWER(brand_name) = ANY(:brands)"
+        params: dict = {"brands": [b.lower() for b in brands]}
+    else:
+        brand_clause = ""
+        params = {}
+
+    sql = f"""
+        SELECT
+            brand_name,
+            ndc,
+            wac_unit_effective_date,
+            wac_unit_price
+        FROM {HISTORICAL_PRICING_TABLE}
+        WHERE wac_unit_price IS NOT NULL
+          {brand_clause}
+        ORDER BY wac_unit_effective_date, brand_name
+    """
+    return query_pricing(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_annual_cost_by_drug_class(filters: FilterState) -> pd.DataFrame:
+    """
+    Average latest-quarter annual cost per ATC drug class.
+
+    Cross-DB: costs come from the pricing DB; class mapping from the drugs DB.
+    The merge is done in Python after both queries return.
+    """
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_pricing_where(brands, filters.drug_indication)
+
+    # Latest quarter available under the current filter scope
+    qtr_sql = f"SELECT MAX(quarter_start) AS latest_qtr FROM {ANNUAL_PRICING_TABLE} WHERE {where}"
+    qtr_df = query_pricing(qtr_sql, params)
+    if qtr_df.empty or qtr_df.iloc[0]["latest_qtr"] is None:
+        return pd.DataFrame()
+    latest_qtr = qtr_df.iloc[0]["latest_qtr"]
+
+    # Cost per brand for the latest quarter
+    cost_sql = f"""
+        SELECT
+            LOWER(brand_name) AS brand_key,
+            SUM(total_cost_filled) AS total_cost
+        FROM {ANNUAL_PRICING_TABLE}
+        WHERE {where}
+          AND quarter_start = :latest_qtr
+        GROUP BY LOWER(brand_name)
+    """
+    cost_df = query_pricing(cost_sql, {**params, "latest_qtr": latest_qtr})
+    if cost_df.empty:
+        return pd.DataFrame()
+
+    # ATC class mapping — scoped to resolved brands if any, else all
+    if brands:
+        class_sql = f"""
+            SELECT DISTINCT
+                LOWER({DRUGS_BRAND_COL}) AS brand_key,
+                {DRUGS_ATC_COL}          AS drug_class
+            FROM {DRUG_CLASSES_TABLE}
+            WHERE LOWER({DRUGS_BRAND_COL}) = ANY(:brands)
+              AND {DRUGS_ATC_COL} IS NOT NULL
+              AND {DRUGS_ATC_COL} <> ''
+        """
+        class_df = query_drugs(class_sql, {"brands": [b.lower() for b in brands]})
+    else:
+        class_sql = f"""
+            SELECT DISTINCT
+                LOWER({DRUGS_BRAND_COL}) AS brand_key,
+                {DRUGS_ATC_COL}          AS drug_class
+            FROM {DRUG_CLASSES_TABLE}
+            WHERE {DRUGS_ATC_COL} IS NOT NULL
+              AND {DRUGS_ATC_COL} <> ''
+        """
+        class_df = query_drugs(class_sql, {})
+
+    if class_df.empty:
+        return pd.DataFrame()
+
+    merged = cost_df.merge(class_df, on="brand_key", how="inner")
+    if merged.empty:
+        return pd.DataFrame()
+
+    result = (
+        merged.groupby("drug_class", as_index=False)["total_cost"]
+        .mean()
+        .rename(columns={"total_cost": "avg_cost"})
+        .sort_values("avg_cost", ascending=False)
+        .head(20)
+    )
+    return result
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_annual_pricing_raw(filters: FilterState) -> pd.DataFrame:
+    """Full annual_pricing_table rows for the table view and CSV download."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_pricing_where(brands, filters.drug_indication)
+    sql = f"""
+        SELECT
+            brand_name,
+            LOWER(TRIM(disease))  AS disease,
+            dosage_form,
+            quarter_start,
+            total_cost_filled
+        FROM {ANNUAL_PRICING_TABLE}
+        WHERE {where}
+        ORDER BY quarter_start DESC, brand_name
+        LIMIT {MAX_TABLE_ROWS}
+    """
+    return query_pricing(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  MARKET ACCESS  (mapped_access_2025 / mapped_access_2026)
+# ════════════════════════════════════════════════════════════════════════════
+
+def _get_ma_table(year: int) -> str:
+    return MA_TABLE_2025 if year == 2025 else MA_TABLE_2026
+
+
+def _build_ma_where(brands: list[str]) -> tuple[str, dict]:
+    """Parameterized WHERE clause for market access tables (brand filter only)."""
+    if brands:
+        return "LOWER(brand_name) = ANY(:brands)", {"brands": [b.lower() for b in brands]}
+    return "1=1", {}
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ma_kpis(filters: FilterState, year: int = 2025) -> dict:
+    """KPI summary for the Market Access page."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_ma_where(brands)
+    table = _get_ma_table(year)
+
+    sql = f"""
+        SELECT
+            COUNT(*)                                                               AS total_drugs,
+            COUNT(*) FILTER (WHERE aetna_req  ILIKE '%PA%'
+                               OR cigna_req   ILIKE '%PA%'
+                               OR united_req  ILIKE '%PA%'
+                               OR kaiser_req  ILIKE '%PA%'
+                               OR optum_req   ILIKE '%PA%'
+                               OR anthem_req  ILIKE '%PA%')                        AS pa_count,
+            COUNT(*) FILTER (WHERE aetna_req  ILIKE '%QL%'
+                               OR cigna_req   ILIKE '%QL%'
+                               OR united_req  ILIKE '%QL%'
+                               OR kaiser_req  ILIKE '%QL%'
+                               OR optum_req   ILIKE '%QL%'
+                               OR anthem_req  ILIKE '%QL%')                        AS ql_count,
+            COUNT(*) FILTER (WHERE aetna_req  ILIKE '%SP%'
+                               OR cigna_req   ILIKE '%SP%'
+                               OR united_req  ILIKE '%SP%'
+                               OR kaiser_req  ILIKE '%SP%'
+                               OR optum_req   ILIKE '%SP%'
+                               OR anthem_req  ILIKE '%SP%')                        AS sp_count
+        FROM {table}
+        WHERE {where}
+    """
+    df = query_market_access(sql, params)
+    if df.empty or df.iloc[0]["total_drugs"] is None:
+        return {"total_drugs": 0, "pa_pct": 0.0, "ql_pct": 0.0, "sp_pct": 0.0}
+
+    row = df.iloc[0]
+    total = int(row["total_drugs"]) or 1
+    return {
+        "total_drugs": int(row["total_drugs"]),
+        "pa_pct": round(int(row["pa_count"]) / total * 100, 1),
+        "ql_pct": round(int(row["ql_count"]) / total * 100, 1),
+        "sp_pct": round(int(row["sp_count"]) / total * 100, 1),
+    }
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ma_avg_tier_by_payer(filters: FilterState, year: int = 2025) -> pd.DataFrame:
+    """Average formulary tier per payer for the selected year."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_ma_where(brands)
+    table = _get_ma_table(year)
+
+    sql = f"""
+        SELECT 'Aetna'           AS payer, ROUND(AVG(NULLIF(aetna_tier,  '')::numeric), 2) AS avg_tier FROM {table} WHERE {where} AND NULLIF(aetna_tier,  '') IS NOT NULL
+        UNION ALL
+        SELECT 'Cigna',                    ROUND(AVG(NULLIF(cigna_tier,  '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(cigna_tier,  '') IS NOT NULL
+        UNION ALL
+        SELECT 'UnitedHealthcare',         ROUND(AVG(NULLIF(united_tier, '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(united_tier, '') IS NOT NULL
+        UNION ALL
+        SELECT 'Kaiser',                   ROUND(AVG(NULLIF(kaiser_tier, '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(kaiser_tier, '') IS NOT NULL
+        UNION ALL
+        SELECT 'OptumRx',                  ROUND(AVG(NULLIF(optum_tier,  '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(optum_tier,  '') IS NOT NULL
+        UNION ALL
+        SELECT 'Anthem',                   ROUND(AVG(NULLIF(anthem_tier, '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(anthem_tier, '') IS NOT NULL
+        ORDER BY avg_tier
+    """
+    return query_market_access(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ma_requirement_breakdown(filters: FilterState, year: int = 2025) -> pd.DataFrame:
+    """Utilization-management requirement type counts per payer."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_ma_where(brands)
+    table = _get_ma_table(year)
+
+    def _payer_block(label: str, col: str) -> str:
+        return f"""
+        SELECT '{label}' AS payer,
+               CASE
+                   WHEN {col} IS NULL OR TRIM({col}) = '' THEN 'None'
+                   WHEN {col} ILIKE '%PA%' AND {col} ILIKE '%QL%'  THEN 'PA+QL'
+                   WHEN {col} ILIKE '%PA%' AND {col} ILIKE '%SP%'  THEN 'PA+SP'
+                   WHEN {col} ILIKE '%PA%'                          THEN 'PA'
+                   WHEN {col} ILIKE '%QL%'                          THEN 'QL'
+                   WHEN {col} ILIKE '%SP%'                          THEN 'SP'
+                   ELSE 'Other'
+               END AS req_type,
+               COUNT(*) AS drug_count
+        FROM {table} WHERE {where}
+        GROUP BY payer, req_type"""
+
+    sql = (
+        _payer_block("Aetna",            "aetna_req")  + " UNION ALL " +
+        _payer_block("Cigna",            "cigna_req")  + " UNION ALL " +
+        _payer_block("UnitedHealthcare", "united_req") + " UNION ALL " +
+        _payer_block("Kaiser",           "kaiser_req") + " UNION ALL " +
+        _payer_block("OptumRx",          "optum_req")  + " UNION ALL " +
+        _payer_block("Anthem",           "anthem_req") +
+        " ORDER BY payer, req_type"
+    )
+    return query_market_access(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ma_brand_payer_heatmap(filters: FilterState, year: int = 2025, limit: int = 25) -> pd.DataFrame:
+    """
+    Wide brand × payer tier data for the heatmap.
+    Returns a DataFrame already pivoted: index = brand_name, columns = payer labels, values = tier.
+    """
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_ma_where(brands)
+    params["lim"] = limit
+    table = _get_ma_table(year)
+
+    sql = f"""
+        SELECT
+            brand_name,
+            aetna_tier, cigna_tier, united_tier, kaiser_tier, optum_tier, anthem_tier,
+            ROUND(
+                (COALESCE(NULLIF(aetna_tier,  '')::numeric, 0) + COALESCE(NULLIF(cigna_tier,  '')::numeric, 0) + COALESCE(NULLIF(united_tier, '')::numeric, 0)
+               + COALESCE(NULLIF(kaiser_tier, '')::numeric, 0) + COALESCE(NULLIF(optum_tier,  '')::numeric, 0) + COALESCE(NULLIF(anthem_tier, '')::numeric, 0))
+                / NULLIF(
+                    (CASE WHEN NULLIF(aetna_tier,  '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(cigna_tier,  '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(united_tier, '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(kaiser_tier, '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(optum_tier,  '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(anthem_tier, '') IS NOT NULL THEN 1 ELSE 0 END)
+                , 0)::numeric
+            , 2) AS avg_tier
+        FROM {table}
+        WHERE {where} AND brand_name IS NOT NULL
+        ORDER BY avg_tier DESC NULLS LAST
+        LIMIT :lim
+    """
+    df = query_market_access(sql, params)
+    if df.empty:
+        return pd.DataFrame()
+
+    col_map = {
+        "aetna_tier":  "Aetna",
+        "cigna_tier":  "Cigna",
+        "united_tier": "UnitedHealthcare",
+        "kaiser_tier": "Kaiser",
+        "optum_tier":  "OptumRx",
+        "anthem_tier": "Anthem",
+    }
+    df = df[["brand_name"] + list(col_map.keys())].rename(columns=col_map)
+    return df.set_index("brand_name")
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ma_brands_by_avg_tier(filters: FilterState, year: int = 2025, limit: int = 20) -> pd.DataFrame:
+    """Top brands ranked by average formulary tier (highest = most restrictive)."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_ma_where(brands)
+    params["lim"] = limit
+    table = _get_ma_table(year)
+
+    sql = f"""
+        SELECT
+            brand_name,
+            ROUND(
+                (COALESCE(NULLIF(aetna_tier,  '')::numeric, 0) + COALESCE(NULLIF(cigna_tier,  '')::numeric, 0) + COALESCE(NULLIF(united_tier, '')::numeric, 0)
+               + COALESCE(NULLIF(kaiser_tier, '')::numeric, 0) + COALESCE(NULLIF(optum_tier,  '')::numeric, 0) + COALESCE(NULLIF(anthem_tier, '')::numeric, 0))
+                / NULLIF(
+                    (CASE WHEN NULLIF(aetna_tier,  '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(cigna_tier,  '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(united_tier, '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(kaiser_tier, '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(optum_tier,  '') IS NOT NULL THEN 1 ELSE 0 END
+                   + CASE WHEN NULLIF(anthem_tier, '') IS NOT NULL THEN 1 ELSE 0 END)
+                , 0)::numeric
+            , 2) AS avg_tier
+        FROM {table}
+        WHERE {where} AND brand_name IS NOT NULL
+        ORDER BY avg_tier DESC NULLS LAST
+        LIMIT :lim
+    """
+    return query_market_access(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ma_yoy_comparison(filters: FilterState) -> pd.DataFrame:
+    """Average tier per payer for 2025 and 2026 combined — for the year-comparison grouped bar chart."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_ma_where(brands)
+
+    def _year_blocks(table: str, year_label: str) -> str:
+        return (
+            f"SELECT '{year_label}' AS year, 'Aetna'           AS payer, ROUND(AVG(NULLIF(aetna_tier,  '')::numeric), 2) AS avg_tier FROM {table} WHERE {where} AND NULLIF(aetna_tier,  '') IS NOT NULL UNION ALL "
+            f"SELECT '{year_label}',         'Cigna',                    ROUND(AVG(NULLIF(cigna_tier,  '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(cigna_tier,  '') IS NOT NULL UNION ALL "
+            f"SELECT '{year_label}',         'UnitedHealthcare',         ROUND(AVG(NULLIF(united_tier, '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(united_tier, '') IS NOT NULL UNION ALL "
+            f"SELECT '{year_label}',         'Kaiser',                   ROUND(AVG(NULLIF(kaiser_tier, '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(kaiser_tier, '') IS NOT NULL UNION ALL "
+            f"SELECT '{year_label}',         'OptumRx',                  ROUND(AVG(NULLIF(optum_tier,  '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(optum_tier,  '') IS NOT NULL UNION ALL "
+            f"SELECT '{year_label}',         'Anthem',                   ROUND(AVG(NULLIF(anthem_tier, '')::numeric), 2)             FROM {table} WHERE {where} AND NULLIF(anthem_tier, '') IS NOT NULL"
+        )
+
+    sql = _year_blocks(MA_TABLE_2025, "2025") + " UNION ALL " + _year_blocks(MA_TABLE_2026, "2026") + " ORDER BY payer, year"
+    return query_market_access(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ma_detail_table(filters: FilterState, year: int = 2025) -> pd.DataFrame:
+    """Full brand-level market access detail for the selected year."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_ma_where(brands)
+    table = _get_ma_table(year)
+
+    sql = f"""
+        SELECT
+            brand_name, generic_name,
+            aetna_tier,  aetna_req,
+            cigna_tier,  cigna_req,
+            united_tier, united_req,
+            kaiser_tier, kaiser_req,
+            optum_tier,  optum_req,
+            anthem_tier, anthem_req
+        FROM {table}
+        WHERE {where}
+        ORDER BY brand_name
+        LIMIT {MAX_TABLE_ROWS}
+    """
+    return query_market_access(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ma_tier_grid(filters: FilterState, year: int = 2025, limit: int = 50) -> pd.DataFrame:
+    """Tier-only grid (brand × payer) for the categorical tier heatmap."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_ma_where(brands)
+    params["lim"] = limit
+    table = _get_ma_table(year)
+
+    sql = f"""
+        SELECT brand_name, aetna_tier, cigna_tier, united_tier, kaiser_tier, optum_tier, anthem_tier
+        FROM {table}
+        WHERE {where} AND brand_name IS NOT NULL
+        ORDER BY brand_name
+        LIMIT :lim
+    """
+    return query_market_access(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ma_req_grid(filters: FilterState, year: int = 2025, limit: int = 50) -> pd.DataFrame:
+    """Requirement-only grid (brand × payer) for the PA/QL/SP checkbox chart."""
+    brands = _get_pricing_brand_list(filters)
+    where, params = _build_ma_where(brands)
+    params["lim"] = limit
+    table = _get_ma_table(year)
+
+    sql = f"""
+        SELECT brand_name, aetna_req, cigna_req, united_req, kaiser_req, optum_req, anthem_req
+        FROM {table}
+        WHERE {where} AND brand_name IS NOT NULL
+        ORDER BY brand_name
+        LIMIT :lim
+    """
+    return query_market_access(sql, params)

@@ -1,0 +1,39 @@
+# Secrets — never bake into images
+.streamlit/secrets.toml
+.env
+.env.*
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Next.js build cache and deps
+frontend/.next/
+frontend/node_modules/
+frontend/tsconfig.tsbuildinfo
+
+# Streamlit legacy app (not needed in backend image)
+app.py
+views/
+components/
+services/
+utils/
+data/
+config/
+assets/
+prompts/
+scripts/
+catalogs/
+requirements.txt
+
+# Docs and tooling
+*.md
+.git/
+.gitignore
+.claude/
+.idea/
+.vscode/
+*.log

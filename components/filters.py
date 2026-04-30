@@ -1,0 +1,394 @@
+"""
+Sidebar filter UI components.
+
+Renders the global filters (indication_name, atc_class_name) and all
+downstream filters whose option lists are constrained by the global selection.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import streamlit as st
+
+from utils.filters import FilterState, get_filters, set_filters
+from data.repository import (
+    get_filter_options,
+    get_indication_options,
+    get_atc_class_options,
+)
+from config.settings import APP_TITLE, APP_ICON
+
+
+# ── Static catalog loaders (no DB calls) ─────────────────────────────────────
+
+@st.cache_data(show_spinner=False)
+def _load_condition_sponsor_catalog() -> dict:
+    """Load condition/sponsor/drug-class values from the condition_sponsor catalog."""
+    try:
+        path = Path("catalogs/condition_sponsor_values.json")
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+@st.cache_data(show_spinner=False)
+def _load_static_filter_values() -> dict:
+    """Load pre-set filter values (study types, phases, statuses, countries, etc.)."""
+    try:
+        path = Path("catalogs/filter_static_values.json")
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+@st.cache_data(show_spinner=False)
+def _get_indication_list() -> list[str]:
+    """Return condition list from catalog (instant). DB enrichment skipped."""
+    data = _load_condition_sponsor_catalog()
+    values = [v.strip() for v in data.get("condition_values", "").split("|") if v.strip()]
+    if values:
+        return sorted(values)
+    # fallback: try DB
+    return get_indication_options()
+
+
+@st.cache_data(show_spinner=False)
+def _get_atc_class_list() -> list[str]:
+    """Return ATC drug class list from catalog (instant). DB enrichment skipped."""
+    data = _load_condition_sponsor_catalog()
+    values = [v.strip() for v in data.get("drug_class_values", "").split("|") if v.strip()]
+    if values:
+        return sorted(values)
+    # fallback: try DB
+    return get_atc_class_options()
+
+
+@st.cache_data(show_spinner=False)
+def _get_sponsor_list() -> list[str]:
+    """Return sponsor list from catalog (instant)."""
+    data = _load_condition_sponsor_catalog()
+    return sorted([v.strip() for v in data.get("sponsor_values", "").split("|") if v.strip()])
+
+
+def _get_static_opts() -> dict:
+    """
+    Return filter options entirely from static catalogs — no DB call.
+    Used when no global filter is active (initial sidebar render).
+    """
+    sv = _load_static_filter_values()
+    return {
+        "sponsors":         _get_sponsor_list(),
+        "study_types":      sv.get("study_types", []),
+        "phases":           sv.get("phases", []),
+        "statuses":         sv.get("overall_statuses", []),
+        "countries":        sv.get("countries", []),
+        "agency_classes":   sv.get("agency_classes", []),
+        "categories":       sv.get("endpoint_categories", []),
+        "pro_instruments":  sv.get("pro_instruments", []),
+        "domains":          sv.get("pro_domains", []),
+        "brands":           [],   # dynamic — populated only when global filter active
+        "drug_indications": [],   # dynamic — populated only when global filter active
+    }
+
+
+# ── Global filter clear helper ────────────────────────────────────────────────
+
+def _do_clear_filter(clear_ind: bool = False, clear_atc: bool = False) -> None:
+    """
+    Clear one or both global filters, reset all downstream filters,
+    and wipe the corresponding widget session_state keys so widgets
+    re-render with empty values on the next run.
+
+    For users with per-user restrictions, global filters are reset to the first
+    allowed value rather than cleared to None.
+    """
+    fs = get_filters()
+
+    if clear_ind:
+        fs.indication_name = None
+        st.session_state["sb_indication"] = ""
+    if clear_atc:
+        fs.atc_class_name = None
+        st.session_state["sb_atc"] = ""
+
+    # Always reset downstream when a global filter is cleared
+    fs.sponsor               = []
+    fs.sponsor_agency_class  = []
+    fs.brand_name            = []
+    fs.drug_indication       = None
+    fs.study_type            = []
+    fs.phase                 = []
+    fs.overall_status        = []
+    fs.country               = []
+    fs.endpoint_category     = []
+    fs.outcome_type          = []
+    fs.pro_instrument        = []
+    fs.pro_domain            = []
+    fs.ae_organ_system       = []
+    fs.ae_term               = []
+    fs.has_results           = None
+    fs.enrollment_min        = None
+    fs.enrollment_max        = None
+    fs._resolved_brand_names = []
+
+    # Wipe downstream widget keys so they re-render empty
+    for key in ("ms_study_type", "ms_phase", "ms_status", "ms_sponsor", "ms_agency_class",
+                "ms_brand", "ms_drug_ind",
+                "ms_epcat", "ms_pro_inst", "ms_pro_dom", "ms_country"):
+        st.session_state.pop(key, None)
+    st.session_state["sel_results"] = "Any"
+    st.session_state["ni_enr_min"]  = 0
+    st.session_state["ni_enr_max"]  = 0
+
+    set_filters(fs)
+
+
+# ── Global filter change callback ─────────────────────────────────────────────
+
+def _on_global_filter_change() -> None:
+    """
+    Called by on_change when the user explicitly changes a global selectbox.
+    Resets all downstream filters so they are re-scoped to the new global selection.
+    Only fires on real user interaction — NOT on reruns triggered by tab switches.
+    """
+    fs = get_filters()
+    new_ind = st.session_state.get("sb_indication") or None
+    new_atc = st.session_state.get("sb_atc") or None
+
+    if new_ind == fs.indication_name and new_atc == fs.atc_class_name:
+        return  # No actual change, nothing to reset
+
+    fs.indication_name       = new_ind
+    fs.atc_class_name        = new_atc
+    fs.sponsor               = []
+    fs.sponsor_agency_class  = []
+    fs.brand_name            = []
+    fs.drug_indication       = None
+    fs.study_type            = []
+    fs.phase                 = []
+    fs.overall_status        = []
+    fs.country               = []
+    fs.endpoint_category     = []
+    fs.outcome_type          = []
+    fs.pro_instrument        = []
+    fs.pro_domain            = []
+    fs.ae_organ_system       = []
+    fs.ae_term               = []
+    fs.has_results           = None
+    fs.enrollment_min        = None
+    fs.enrollment_max        = None
+    fs._resolved_brand_names = []
+    set_filters(fs)
+
+    # Pop downstream widget session_state keys so that multiselects fall back
+    # to their default= parameter (which will be [] since FilterState was just
+    # cleared).  Without this, the multiselects read their cached session_state
+    # values on the next render and silently re-populate FilterState, making
+    # the cascade reset ineffective.
+    for key in ("ms_study_type", "ms_phase", "ms_status", "ms_sponsor",
+                "ms_agency_class", "ms_brand", "ms_drug_ind",
+                "ms_epcat", "ms_pro_inst", "ms_pro_dom", "ms_country"):
+        st.session_state.pop(key, None)
+    st.session_state["sel_results"] = "Any"
+
+
+# ── Main sidebar renderer ─────────────────────────────────────────────────────
+
+def render_sidebar() -> FilterState:
+    """
+    Render the full sidebar filter panel.
+    Returns the current (updated) FilterState.
+    """
+    fs = get_filters()
+
+    # ── Consume any pending widget values set by _apply_filters() ─────────────
+    # _apply_filters() cannot write to sb_indication/sb_atc directly because
+    # those widgets are instantiated later in this same function call (on the
+    # previous rerun they were already rendered before _apply_filters ran).
+    # Pending keys are set on the rerun that triggered st.rerun(), and consumed
+    # here at the very start of the next rerun — before any widget is created.
+    if "_pending_sb_indication" in st.session_state:
+        st.session_state["sb_indication"] = st.session_state.pop("_pending_sb_indication")
+    if "_pending_sb_atc" in st.session_state:
+        st.session_state["sb_atc"] = st.session_state.pop("_pending_sb_atc")
+
+    with st.sidebar:
+        # ── Sidebar header (filters only) ─────────────────────────────────────
+        st.markdown(
+            "<h3 style='color:#E2E8F0;margin:4px 0 2px 0;font-size:1rem;font-weight:700;'>"
+            "⚙️ Filters</h3>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "<hr style='margin:6px 0 14px 0; border-color:rgba(255,255,255,0.15);'>",
+            unsafe_allow_html=True,
+        )
+
+        # ── GLOBAL FILTERS ────────────────────────────────────────────────────
+        st.markdown("#### 🌐 Global Filters")
+        st.caption("Drug class and MeSH condition filters")
+
+        # Per-user restrictions from session state
+        _ua = st.session_state.get("user_access", {})
+        _allowed_ind = _ua.get("disease_areas")   # None = unrestricted, list = restricted
+        _allowed_atc = _ua.get("drug_classes")     # None = unrestricted, list = restricted
+
+        # ── Indication filter ────────────────────────────────────────────────
+        if _allowed_ind is not None:
+            # Restricted — show only allowed options with an empty default
+            indication_opts = [""] + _allowed_ind
+        else:
+            indication_opts = [""] + _get_indication_list()
+        if "sb_indication" not in st.session_state:
+            st.session_state["sb_indication"] = fs.indication_name or ""
+
+        sel_ind = st.selectbox(
+            "Condition (Disease Area)",
+            options=indication_opts,
+            help="MeSH mesh-list condition from ctgov.browse_conditions. Scopes all pages to trials with this condition that are also in drug_trials.",
+            key="sb_indication",
+            on_change=_on_global_filter_change,
+        )
+
+        # ── ATC / Drug Class filter ──────────────────────────────────────────
+        if _allowed_atc is not None:
+            # Restricted — show only allowed options with an empty default
+            atc_opts = [""] + _allowed_atc
+        else:
+            atc_opts = [""] + _get_atc_class_list()
+        if "sb_atc" not in st.session_state:
+            st.session_state["sb_atc"] = fs.atc_class_name or ""
+
+        sel_atc = st.selectbox(
+            "Drug Class (ATC)",
+            options=atc_opts,
+            help="Filters all data to trials associated with this drug class. "
+                 "Independent of Indication.",
+            key="sb_atc",
+            on_change=_on_global_filter_change,
+        )
+
+        # Re-read fs after potential on_change reset, then sync widget values
+        fs = get_filters()
+        fs.indication_name = sel_ind or None
+        fs.atc_class_name  = sel_atc or None
+
+        # ── Downstream filter options ──────────────────────────────────────
+        # Use static catalogs when no global filter is active (instant render).
+        # Fall back to DB-scoped query only when user has selected a global filter.
+        if fs.indication_name or fs.atc_class_name:
+            opts = get_filter_options(fs.indication_name, fs.atc_class_name)
+        else:
+            opts = _get_static_opts()
+
+        st.markdown("<hr style='margin:12px 0;border-color:rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
+        st.markdown("#### 🔽 Downstream Filters")
+
+        with st.expander("Trial Attributes", expanded=False):
+            fs.study_type = st.multiselect(
+                "Study Type",
+                options=opts.get("study_types", []),
+                default=[t for t in fs.study_type if t in opts.get("study_types", [])],
+                key="ms_study_type",
+            )
+            fs.phase = st.multiselect(
+                "Phase",
+                options=opts.get("phases", []),
+                default=[p for p in fs.phase if p in opts.get("phases", [])],
+                key="ms_phase",
+            )
+            fs.overall_status = st.multiselect(
+                "Status",
+                options=opts.get("statuses", []),
+                default=[s for s in fs.overall_status if s in opts.get("statuses", [])],
+                key="ms_status",
+            )
+            has_results_options = {"Any": None, "Has Results": True, "No Results": False}
+            hr_label = {None: "Any", True: "Has Results", False: "No Results"}[fs.has_results]
+            fs.has_results = has_results_options[
+                st.selectbox("Results Posted", list(has_results_options.keys()),
+                             index=list(has_results_options.keys()).index(hr_label),
+                             key="sel_results")
+            ]
+
+        with st.expander("Sponsor / Drug"):
+            fs.sponsor = st.multiselect(
+                "Sponsor",
+                options=opts.get("sponsors", []),
+                default=[s for s in fs.sponsor if s in opts.get("sponsors", [])],
+                key="ms_sponsor",
+            )
+            fs.sponsor_agency_class = st.multiselect(
+                "Agency Class",
+                options=opts.get("agency_classes", []),
+                default=[a for a in fs.sponsor_agency_class if a in opts.get("agency_classes", [])],
+                key="ms_agency_class",
+                help="Lead sponsor organisation type: INDUSTRY, FED, OTHER_GOV, INDIV.",
+            )
+            fs.brand_name = st.multiselect(
+                "Drug (Brand Name)",
+                options=opts.get("brands", []),
+                default=[b for b in fs.brand_name if b in opts.get("brands", [])],
+                key="ms_brand",
+            )
+            # Drug Indication — from public.drug_indications, scoped by brands in scope.
+            # This is a downstream filter distinct from the global MeSH Indication filter.
+            drug_ind_opts = [""] + opts.get("drug_indications", [])
+            prev_drug_ind = fs.drug_indication or ""
+            sel_drug_ind = st.selectbox(
+                "Drug Indication (Label)",
+                options=drug_ind_opts,
+                index=drug_ind_opts.index(prev_drug_ind) if prev_drug_ind in drug_ind_opts else 0,
+                help="Filter by the labeled indication from the drugs database (drug_indications table).",
+                key="ms_drug_ind",
+            )
+            fs.drug_indication = sel_drug_ind or None
+
+        # with st.expander("Enrollment"):
+        #     enr_min = st.number_input(
+        #         "Min Enrollment", min_value=0, value=fs.enrollment_min or 0,
+        #         step=10, key="ni_enr_min",
+        #     )
+        #     enr_max = st.number_input(
+        #         "Max Enrollment", min_value=0, value=fs.enrollment_max or 0,
+        #         step=10, key="ni_enr_max",
+        #     )
+        #     fs.enrollment_min = int(enr_min) if enr_min > 0 else None
+        #     fs.enrollment_max = int(enr_max) if enr_max > 0 else None
+
+        with st.expander("Endpoints / Outcomes"):
+            fs.endpoint_category = st.multiselect(
+                "Endpoint Category",
+                options=opts.get("categories", []),
+                default=[c for c in fs.endpoint_category if c in opts.get("categories", [])],
+                key="ms_epcat",
+            )
+
+        with st.expander("PRO"):
+            fs.pro_instrument = st.multiselect(
+                "PRO Instrument",
+                options=opts.get("pro_instruments", []),
+                default=[p for p in fs.pro_instrument if p in opts.get("pro_instruments", [])],
+                key="ms_pro_inst",
+            )
+            fs.pro_domain = st.multiselect(
+                "PRO Domain",
+                options=opts.get("domains", []),
+                default=[d for d in fs.pro_domain if d in opts.get("domains", [])],
+                key="ms_pro_dom",
+            )
+
+        with st.expander("Geography"):
+            fs.country = st.multiselect(
+                "Country",
+                options=opts.get("countries", []),
+                default=[c for c in fs.country if c in opts.get("countries", [])],
+                key="ms_country",
+            )
+
+        st.markdown("<hr style='margin:12px 0;border-color:rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
+        st.button("🔄 Reset All Filters", use_container_width=True, key="btn_reset",
+                  on_click=_do_clear_filter, kwargs={"clear_ind": True, "clear_atc": True})
+
+    set_filters(fs)
+    return fs
