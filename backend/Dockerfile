@@ -2,10 +2,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY backend/ ./backend/
+COPY . ./backend/
 
 # backend/src uses bare imports (e.g. "from api.routes import ...") so both
 # the repo root and backend/src must be on the path

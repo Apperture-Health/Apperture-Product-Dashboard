@@ -4,7 +4,6 @@ import logging
 import os
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from api.routes import api_router
@@ -14,13 +13,6 @@ from utils.runtime import runtime
 
 def create_app() -> FastAPI:
     app = FastAPI(title="CTIP FastAPI Backend", version="1.0.0")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[os.getenv("ALLOWED_ORIGIN", "http://localhost:3000")],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
     app.add_middleware(
         SessionMiddleware,
         secret_key=runtime.secrets.get("app", {}).get("session_secret", "ctip-dev-secret"),
