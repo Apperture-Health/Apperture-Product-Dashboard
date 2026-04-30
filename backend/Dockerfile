@@ -11,6 +11,6 @@ COPY . ./backend/
 # the repo root and backend/src must be on the path
 ENV PYTHONPATH=/app:/app/backend/src
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 2
