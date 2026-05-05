@@ -55,8 +55,14 @@ class RuntimeCompat:
     @property
     def secrets(self) -> dict[str, Any]:
         if self._secrets is None:
-            root = Path(__file__).resolve().parents[3]
-            secrets_path = root / ".streamlit" / "secrets.toml"
+            import os
+            override = os.getenv("SECRETS_TOML_PATH")
+            if override:
+                secrets_path = Path(override)
+            else:
+                root = Path(__file__).resolve().parents[3]
+                secrets_path = root / ".streamlit" / "secrets.toml"
+            self._logger.info(f"Loading secrets from: {secrets_path} (exists={secrets_path.exists()})")
             if not secrets_path.exists():
                 self._secrets = {}
             else:
