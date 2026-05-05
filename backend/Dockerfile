@@ -13,4 +13,4 @@ ENV PYTHONPATH=/app:/app/backend/src
 
 EXPOSE 8080
 
-CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 2
+CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8080}
