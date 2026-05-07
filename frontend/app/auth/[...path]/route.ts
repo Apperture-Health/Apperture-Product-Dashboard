@@ -2,6 +2,18 @@ import { NextRequest } from "next/server";
 
 const BACKEND = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 
+async function getIdentityToken(): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${BACKEND}`,
+      { headers: { "Metadata-Flavor": "Google" } }
+    );
+    return res.ok ? res.text() : null;
+  } catch {
+    return null; // local dev — no metadata server
+  }
+}
+
 async function proxy(req: NextRequest, path: string[]) {
   const target = `${BACKEND}/auth/${path.join("/")}`;
 
@@ -9,6 +21,9 @@ async function proxy(req: NextRequest, path: string[]) {
   req.headers.forEach((value, key) => {
     if (key.toLowerCase() !== "host") headers.set(key, value);
   });
+
+  const token = await getIdentityToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const body =
     req.method !== "GET" && req.method !== "HEAD"
