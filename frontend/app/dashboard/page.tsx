@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { DashboardClient } from "@/components/dashboard-client";
+import { DashboardShell } from "@/components/DashboardShell";
 
 export default function DashboardPage() {
   return (
     <Suspense>
-      <DashboardClient />
+      <DashboardShell />
     </Suspense>
   );
 }

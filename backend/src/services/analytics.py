@@ -6,16 +6,6 @@ from __future__ import annotations
 import pandas as pd
 
 
-def pivot_phase_sponsor(df: pd.DataFrame) -> pd.DataFrame:
-    """Pivot sponsor × phase DataFrame for stacked bar chart."""
-    if df.empty or "sponsor" not in df.columns or "phase" not in df.columns:
-        return pd.DataFrame()
-    return df.pivot_table(
-        index="sponsor", columns="phase", values="trial_count",
-        aggfunc="sum", fill_value=0,
-    ).reset_index()
-
-
 def compute_completion_rate(total: int, completed: int) -> float:
     if not total:
         return 0.0
@@ -56,16 +46,6 @@ def compute_pro_funnel(planned_n: int, reported_n: int) -> pd.DataFrame:
         "stage": ["Planned PROs", "Reported PROs"],
         "trial_count": [planned_n, reported_n],
     })
-
-
-def year_from_date_col(df: pd.DataFrame, col: str) -> pd.DataFrame:
-    """Parse a datetime column to year int."""
-    if df.empty or col not in df.columns:
-        return df
-    df = df.copy()
-    df[col] = pd.to_datetime(df[col], errors="coerce")
-    df["year"] = df[col].dt.year
-    return df
 
 
 def pivot_heatmap(df: pd.DataFrame, index: str, columns: str, values: str) -> pd.DataFrame:

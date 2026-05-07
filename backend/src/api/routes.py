@@ -326,8 +326,6 @@ def home_page(payload: PageRequest, request: Request) -> dict:
             "kpiSource": "snapshot",
         }
     top_sponsors = _records(get_top_sponsors(filters, limit=15))
-    print("DEBUG home_page topSponsors rows:", len(top_sponsors))
-    print("DEBUG home_page topSponsors sample:", top_sponsors[:5])
     return {
         "kpis": kpis,
         "trialsByPhase": _records(get_trials_by_phase(filters)),
