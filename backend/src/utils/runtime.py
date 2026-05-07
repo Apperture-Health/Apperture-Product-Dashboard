@@ -56,18 +56,19 @@ class RuntimeCompat:
     def secrets(self) -> dict[str, Any]:
         if self._secrets is None:
             import os
-            override = os.getenv("SECRETS_TOML_PATH")
-            if override:
-                secrets_path = Path(override)
+            raw = os.getenv("SECRETS_TOML")
+            if raw:
+                # Cloud Run: entire secrets.toml content injected as env var
+                self._secrets = tomllib.loads(raw)
             else:
+                # Local dev: read from file
                 root = Path(__file__).resolve().parents[3]
                 secrets_path = root / ".streamlit" / "secrets.toml"
-            self._logger.info(f"Loading secrets from: {secrets_path} (exists={secrets_path.exists()})")
-            if not secrets_path.exists():
-                self._secrets = {}
-            else:
-                with secrets_path.open("rb") as fh:
-                    self._secrets = tomllib.load(fh)
+                if not secrets_path.exists():
+                    self._secrets = {}
+                else:
+                    with secrets_path.open("rb") as fh:
+                        self._secrets = tomllib.load(fh)
         return self._secrets
 
     def cache_data(self, ttl: int = 300, show_spinner: bool = False) -> Callable[[F], F]:
