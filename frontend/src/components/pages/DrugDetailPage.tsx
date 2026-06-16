@@ -6,10 +6,12 @@ import { hasAnyFilter } from "@/lib/transforms";
 import { AgGridTable } from "@/components/ui/AgGridTable";
 import { AiSummaryBlock } from "@/components/ui/AiSummaryBlock";
 import { AlertCallout } from "@/components/ui/AlertCallout";
+import { ChartSkeleton } from "@/components/ui/ChartSkeleton";
 import { ChartTile } from "@/components/ui/ChartTile";
 import { CsvButton } from "@/components/ui/CsvButton";
 import { MetricRow } from "@/components/ui/MetricRow";
 import { SectionTabs } from "@/components/ui/SectionTabs";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
 import { PageProps, toRecs } from "./types";
 
 function noData(context: string) {
@@ -30,11 +32,11 @@ function filterRequired(message: string) {
   );
 }
 
-export function DrugDetailPage({ filters, pageData, pageSummaries, summaryLoading, requestSummary }: PageProps) {
+export function DrugDetailPage({ filters, pageData, pageSummaries, summaryLoading, requestSummary, fullyLoaded }: PageProps) {
   const [subtab, setSubtab] = useState("brands");
   const kpis = (pageData?.kpis as Record<string, unknown>) ?? {};
 
-  if (Number(kpis.total_trials ?? 0) === 0) {
+  if ((fullyLoaded ?? false) && Number(kpis.total_trials ?? 0) === 0) {
     return <div className="page-stack">{noData("trials for the current filters")}</div>;
   }
 
@@ -64,27 +66,35 @@ export function DrugDetailPage({ filters, pageData, pageSummaries, summaryLoadin
               onChange={setSubtab}
             />
             {subtab === "brands"
-              ? (toRecs(pageData?.brandCounts).length
-                ? <ChartTile title="Brand Names — Trial Counts" figure={barFigure(toRecs(pageData?.brandCounts), "brand_name", "trial_count", true)} />
-                : noData("brand names"))
+              ? (!pageData?.brandCounts
+                ? <ChartSkeleton />
+                : toRecs(pageData?.brandCounts).length
+                  ? <ChartTile title="Brand Names — Trial Counts" figure={barFigure(toRecs(pageData?.brandCounts), "brand_name", "trial_count", true)} />
+                  : noData("brand names"))
               : null}
             {subtab === "phase"
-              ? (toRecs(pageData?.phaseBrandHeatmap).length
-                ? <ChartTile title="Phase × Brand Name — Trial Counts" figure={heatmapFigure(toRecs(pageData?.phaseBrandHeatmap), "brand_name", "phase", "trial_count")} />
-                : noData("phase data"))
+              ? (!pageData?.phaseBrandHeatmap
+                ? <ChartSkeleton />
+                : toRecs(pageData?.phaseBrandHeatmap).length
+                  ? <ChartTile title="Phase × Brand Name — Trial Counts" figure={heatmapFigure(toRecs(pageData?.phaseBrandHeatmap), "brand_name", "phase", "trial_count")} />
+                  : noData("phase data"))
               : null}
             {subtab === "classes"
-              ? (toRecs(pageData?.drugClasses).length
-                ? <ChartTile title="ATC Drug Classes — Brands per Class" figure={barFigure(toRecs(pageData?.drugClasses), "drug_class", "brand_count", true)} />
-                : noData("drug classes"))
+              ? (!pageData?.drugClasses
+                ? <ChartSkeleton />
+                : toRecs(pageData?.drugClasses).length
+                  ? <ChartTile title="ATC Drug Classes — Brands per Class" figure={barFigure(toRecs(pageData?.drugClasses), "drug_class", "brand_count", true)} />
+                  : noData("drug classes"))
               : null}
             {subtab === "trials"
-              ? (toRecs(pageData?.trialsTable).length
-                ? <>
-                    <CsvButton rows={toRecs(pageData?.trialsTable)} filename="drug_detail_trials.csv" />
-                    <AgGridTable rows={toRecs(pageData?.trialsTable)} />
-                  </>
-                : noData("trial list"))
+              ? (!(fullyLoaded ?? false)
+                ? <TableSkeleton rows={8} />
+                : toRecs(pageData?.trialsTable).length
+                  ? <>
+                      <CsvButton rows={toRecs(pageData?.trialsTable)} filename="drug_detail_trials.csv" />
+                      <AgGridTable rows={toRecs(pageData?.trialsTable)} />
+                    </>
+                  : noData("trial list"))
               : null}
             <AiSummaryBlock pageKey="drug-detail" summary={pageSummaries["drug-detail"]} loading={summaryLoading} onGenerate={() => requestSummary("drug-detail")} />
           </>

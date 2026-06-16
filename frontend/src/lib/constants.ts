@@ -15,6 +15,7 @@ export const PAGE_META: PageMeta[] = [
   { key: "pro-overview", label: "👤 PRO Overview", title: "PRO Overview" },
   { key: "trial-groups", label: "🗂️ Trial Groups", title: "Trial Groups" },
   { key: "safety", label: "🛡️ Safety", title: "Safety Analysis" },
+  { key: "real-world-safety", label: "🌐 Real World Safety", title: "FAERS Post-Market Safety" },
 ];
 
 export const PAGE_SUBTITLES: Record<string, string> = {
@@ -31,6 +32,7 @@ export const PAGE_SUBTITLES: Record<string, string> = {
   "pro-overview": "Patient-reported outcome instrument adoption: planned vs reported, by sponsor, and by phase.",
   "trial-groups": "Protocol arms, design groups, and result groups: intervention mapping and group structure.",
   safety: "Adverse event reporting: terms, organ systems, drug associations, and incidence analysis.",
+  "real-world-safety": "Post-market spontaneous safety reports from FDA FAERS.",
   "ask-the-data": "Ask a question about the clinical trial landscape — filters are applied automatically across all tabs.",
 };
 
@@ -48,6 +50,7 @@ export const MODULE_DESC: Record<string, string> = {
   "pro-overview": "PRO instrument adoption: planned vs reported, by sponsor, and by phase.",
   "trial-groups": "Protocol arms, design groups, and result groups: structure and drug linkage.",
   safety: "Adverse event terms, organ systems, drug associations, and incidence analysis.",
+  "real-world-safety": "Post-market spontaneous safety reports from FDA FAERS: reactions, SOC, and outcomes.",
 };
 
 export const CHIP_CLASS: Record<string, string> = {
@@ -80,6 +83,7 @@ export const PAGE_ENDPOINT_MAP: Record<string, { path: string; extra?: Record<st
   "pro-overview": { path: "/api/pages/pro-overview" },
   "trial-groups": { path: "/api/pages/trial-groups" },
   safety: { path: "/api/pages/safety" },
+  "real-world-safety": { path: "/api/pages/real-world-safety" },
 };
 
 export const defaultFilters: FilterState = {

@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { barFigure, treemapFigure } from "@/lib/charts";
-import { hasAnyFilter, safetyMetrics } from "@/lib/transforms";
+import { hasAnyFilter } from "@/lib/transforms";
 import { apiRequest, pagePayload } from "@/lib/api";
 import { FilterState, KeyValueRecord } from "@/lib/types";
 import { AgGridTable } from "@/components/ui/AgGridTable";
 import { AlertCallout } from "@/components/ui/AlertCallout";
 import { ChartTile } from "@/components/ui/ChartTile";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { MetricRow } from "@/components/ui/MetricRow";
 import { SectionTabs } from "@/components/ui/SectionTabs";
 import { TwoCol } from "@/components/ui/TwoCol";
 import { PageProps, toRecs } from "./types";
@@ -58,7 +57,6 @@ export function SafetyPage({ filters, pageData, updateFilter }: SafetyPageProps)
       <AlertCallout tone="warning" title="Safety Interpretation Note">
         Adverse event frequencies reflect reporting from individual trials, which vary in design, population, duration, and follow-up.
       </AlertCallout>
-      <MetricRow items={safetyMetrics(aeAggregates)} />
       {!hasAnyFilter(filters)
         ? filterRequired("Please select at least one filter in the sidebar (indication, drug class, sponsor, phase, etc.) to view the charts.")
         : (

@@ -61,6 +61,7 @@ class FiltersOptionsDTO(BaseModel):
 
 class PageRequest(BaseModel):
     filters: FilterStateDTO = Field(default_factory=FilterStateDTO)
+    pipeline_classes: list[str] = Field(default_factory=list)
 
 
 class MarketAccessPageRequest(PageRequest):

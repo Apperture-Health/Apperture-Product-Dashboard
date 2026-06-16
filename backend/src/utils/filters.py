@@ -1,10 +1,96 @@
 """
-Framework-agnostic filter state.
+Framework-agnostic filter state + disease bucket mapping helpers.
 """
 from __future__ import annotations
 
+import json
+from collections import defaultdict
 from dataclasses import dataclass, field
+from functools import lru_cache
+from pathlib import Path
 
+
+# ── Catalog path helper ───────────────────────────────────────────────────────
+
+def _catalog_path(filename: str) -> Path:
+    backend_root = Path(__file__).resolve().parents[2]
+    candidates = [
+        backend_root / "catalogs" / filename,
+        backend_root.parent / "catalogs" / filename,
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return candidates[0]
+
+
+# ── Disease bucket mapping ────────────────────────────────────────────────────
+# Maps raw ctgov.conditions.name values ↔ human-readable display labels.
+# Loaded once per process; lru_cache'd for the lifetime of the process.
+
+@lru_cache(maxsize=1)
+def _load_disease_bucket_mapping() -> dict[str, str]:
+    """Return {raw_condition_name: display_label} from the catalog file."""
+    try:
+        return json.loads(_catalog_path("disease_bucket_mapping.json").read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+@lru_cache(maxsize=1)
+def _build_display_to_raw_map() -> dict[str, list[str]]:
+    """Return {display_label: [raw_condition_name, ...]} reverse mapping."""
+    mapping = _load_disease_bucket_mapping()
+    result: dict[str, list[str]] = defaultdict(list)  # type: ignore[assignment]
+    for raw, display in mapping.items():
+        result[display].append(raw)
+    return dict(result)
+
+
+def get_unique_display_labels() -> list[str]:
+    """Sorted list of unique display labels for the Condition dropdown."""
+    return sorted(set(_load_disease_bucket_mapping().values()))
+
+
+def get_raw_conditions_for_display_label(display_label: str) -> list[str]:
+    """
+    Return every raw ctgov.conditions.name that maps to *display_label*.
+    Falls back to [display_label] so callers can always build a valid IN clause.
+    """
+    if not display_label:
+        return []
+    reverse = _build_display_to_raw_map()
+    return reverse.get(display_label, [display_label])
+
+
+def get_display_label_for_raw_condition(raw_condition: str) -> str:
+    """Map a single raw condition name to its display label (identity fallback)."""
+    return _load_disease_bucket_mapping().get(raw_condition, raw_condition)
+
+
+# ── Static catalog helpers ────────────────────────────────────────────────────
+
+@lru_cache(maxsize=1)
+def _load_full_indication_list() -> tuple[str, ...]:
+    """Return all available indications from the static catalog."""
+    try:
+        data = json.loads(_catalog_path("condition_sponsor_values.json").read_text(encoding="utf-8"))
+        return tuple(sorted([v.strip() for v in data.get("condition_values", "").split("|") if v.strip()]))
+    except Exception:
+        return ()
+
+
+@lru_cache(maxsize=1)
+def _load_full_atc_class_list() -> tuple[str, ...]:
+    """Return all available ATC drug classes from the static catalog."""
+    try:
+        data = json.loads(_catalog_path("condition_sponsor_values.json").read_text(encoding="utf-8"))
+        return tuple(sorted([v.strip() for v in data.get("drug_class_values", "").split("|") if v.strip()]))
+    except Exception:
+        return ()
+
+
+# ── FilterState ───────────────────────────────────────────────────────────────
 
 @dataclass
 class FilterState:
@@ -86,3 +172,43 @@ class FilterState:
             hi = self.enrollment_max or "∞"
             out["Enrollment"] = f"{lo}-{hi}"
         return out
+
+
+# ── User-access restriction helpers ──────────────────────────────────────────
+
+def build_allowed_indications(user_access: dict) -> list[str] | None:
+    """
+    Compute the allowed_indications list from a user_access dict.
+
+    Supports both inclusion (disease_areas) and exclusion (disease_areas_exclude);
+    inclusion wins if both are supplied.
+    Returns None when no restriction applies (all indications visible).
+    """
+    disease_areas         = user_access.get("disease_areas")
+    disease_areas_exclude = user_access.get("disease_areas_exclude")
+
+    if disease_areas is not None:
+        return list(disease_areas)
+    if disease_areas_exclude is not None:
+        excl = {e.lower() for e in disease_areas_exclude}
+        return [lbl for lbl in get_unique_display_labels() if lbl.lower() not in excl]
+    return None
+
+
+def build_allowed_atc_classes(user_access: dict) -> list[str] | None:
+    """
+    Compute the allowed_atc_classes list from a user_access dict.
+
+    Supports both inclusion (drug_classes) and exclusion (drug_classes_exclude);
+    inclusion wins if both are supplied.
+    Returns None when no restriction applies.
+    """
+    drug_classes         = user_access.get("drug_classes")
+    drug_classes_exclude = user_access.get("drug_classes_exclude")
+
+    if drug_classes is not None:
+        return list(drug_classes)
+    if drug_classes_exclude is not None:
+        excl = {e.lower() for e in drug_classes_exclude}
+        return [c for c in _load_full_atc_class_list() if c.lower() not in excl]
+    return None

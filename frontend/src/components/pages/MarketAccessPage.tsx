@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { hasAnyFilter, metricValue, reqFigure, tierFigure } from "@/lib/transforms";
 import { AiSummaryBlock } from "@/components/ui/AiSummaryBlock";
+import { ChartSkeleton } from "@/components/ui/ChartSkeleton";
 import { ChartTile } from "@/components/ui/ChartTile";
 import { MetricRow } from "@/components/ui/MetricRow";
 import { SectionTabs } from "@/components/ui/SectionTabs";
@@ -64,19 +65,23 @@ export function MarketAccessPage({
               onChange={setSubtab}
             />
             {subtab === "tiers" ? (
-              <ChartTile title={`Formulary Tiers by Drug & Payer (${marketAccessYear})`} figure={tierFigure(toRecs(pageData?.tierGrid))} />
+              !pageData?.tierGrid
+                ? <ChartSkeleton />
+                : <ChartTile title={`Formulary Tiers by Drug & Payer (${marketAccessYear})`} figure={tierFigure(toRecs(pageData?.tierGrid))} />
             ) : null}
             {subtab === "requirements" ? (
-              <>
-                <div className="inline-controls">
-                  {["PA", "QL", "SP"].map((option) => (
-                    <button key={option} className={reqType === option ? "pill active" : "pill"} onClick={() => setReqType(option)}>
-                      {option}
-                    </button>
-                  ))}
-                </div>
-                <ChartTile title={`${reqType} Requirement by Drug & Payer (${marketAccessYear})`} figure={reqFigure(toRecs(pageData?.requirementGrid), reqType)} />
-              </>
+              !pageData?.requirementGrid
+                ? <ChartSkeleton />
+                : <>
+                    <div className="inline-controls">
+                      {["PA", "QL", "SP"].map((option) => (
+                        <button key={option} className={reqType === option ? "pill active" : "pill"} onClick={() => setReqType(option)}>
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                    <ChartTile title={`${reqType} Requirement by Drug & Payer (${marketAccessYear})`} figure={reqFigure(toRecs(pageData?.requirementGrid), reqType)} />
+                  </>
             ) : null}
             <AiSummaryBlock
               pageKey="market-access"

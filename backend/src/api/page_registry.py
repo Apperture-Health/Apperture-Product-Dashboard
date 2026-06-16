@@ -15,6 +15,7 @@ PAGE_MAP: list[tuple[str, str, str]] = [
     ("pro-overview", "👤 PRO Overview", "PRO Overview"),
     ("trial-groups", "🗂️ Trial Groups", "Trial Groups"),
     ("safety", "🛡️ Safety", "Safety Analysis"),
+    ("real-world-safety", "🌐 Real World Safety", "FAERS Post-Market Safety"),
 ]
 
 PAGE_LABELS = [label for _, label, _ in PAGE_MAP]

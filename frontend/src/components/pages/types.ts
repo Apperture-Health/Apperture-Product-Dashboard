@@ -7,6 +7,8 @@ export type PageProps = {
   pageSummaries: Record<string, string>;
   summaryLoading: boolean;
   requestSummary: (pageKey: string, year?: number) => Promise<void>;
+  kpisReady?: boolean;
+  fullyLoaded?: boolean;
 };
 
 export function toRecs(input: unknown): KeyValueRecord[] {

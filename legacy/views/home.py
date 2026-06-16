@@ -9,111 +9,40 @@ import pandas as pd
 from components.page_header import page_header
 from components.metric_cards import kpi_row
 from components.filter_summary import filter_summary_bar
-from components.charts import phase_bar, area_chart, bar_chart
+from components.charts import (
+    phase_bar, area_chart, bar_chart, donut_chart,
+)
 from components.chart_tile import chart_tile
 from components.alerts import no_data_callout, filter_required_callout
 from utils.filters import FilterState
+from utils.formatting import fmt_number, fmt_median
 from data.repository import (
     get_overview_kpis,
     get_trials_by_phase,
     get_trials_over_time,
     get_top_sponsors,
     get_top_conditions,
+    get_top_interventions,
 )
 from config.settings import PAGES
 
 
 _NAV_CSS = """
 <style>
-.nav-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    margin-top: 4px;
-}
+.nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 10px; }
 .nav-card {
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    padding: 18px 20px;
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    transition: box-shadow .2s, border-color .2s, transform .2s;
-    position: relative;
-    overflow: hidden;
-}
-.nav-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 3px; height: 100%;
-    background: #0F4C81;
-    border-radius: 12px 0 0 12px;
-    opacity: 0;
-    transition: opacity .2s;
-}
-.nav-card:hover {
-    box-shadow: 0 6px 24px rgba(15,76,129,.13);
-    border-color: #93C5FD;
-    transform: translateY(-2px);
-}
-.nav-card:hover::after { opacity: 1; }
-.nav-icon-wrap {
-    background: rgba(15,76,129,0.08);
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
     border-radius: 10px;
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    line-height: 1;
-    flex-shrink: 0;
+    padding: 16px 18px;
+    transition: box-shadow .15s;
 }
-.nav-body { flex: 1; min-width: 0; }
-.nav-title {
-    font-weight: 700;
-    font-size: .875rem;
-    color: #1E40AF;
-    line-height: 1.3;
-}
-.nav-desc {
-    font-size: .75rem;
-    color: #6B7280;
-    margin-top: 4px;
-    line-height: 1.45;
-}
-.nav-arrow {
-    font-size: 1.15rem;
-    color: #CBD5E1;
-    flex-shrink: 0;
-    align-self: center;
-    transition: color .2s, transform .2s;
-    font-weight: 300;
-    padding-left: 4px;
-}
-.nav-card:hover .nav-arrow {
-    color: #0F4C81;
-    transform: translateX(3px);
-}
+.nav-card:hover { box-shadow: 0 4px 12px rgba(37,99,235,.12); border-color: #93C5FD; }
+.nav-card .nav-icon { font-size: 1.5rem; }
+.nav-card .nav-title { font-weight: 600; font-size: .9rem; color: #1E40AF; margin-top: 4px; }
+.nav-card .nav-desc  { font-size: .78rem; color: #6B7280; margin-top: 3px; }
 </style>
 """
-
-
-def _section_header(title: str, subtitle: str = "") -> None:
-    sub = (
-        f'<p style="color:#6B7280;font-size:14px;margin:0;">{subtitle}</p>'
-        if subtitle else ""
-    )
-    st.markdown(
-        f'<div style="margin:28px 0 14px 0;">'
-        f'<h3 style="color:#0F4C81;font-weight:700;margin-bottom:2px;font-size:20px;">{title}</h3>'
-        f'{sub}'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
 
 
 def render(filters: FilterState) -> None:
@@ -124,39 +53,38 @@ def render(filters: FilterState) -> None:
     )
     filter_summary_bar(filters)
 
+    ind = filters.indication_name
+
     with st.spinner("Loading overview…"):
         kpis = get_overview_kpis(filters)
 
-    # ── KPI Rows ──────────────────────────────────────────────────────────────
-    _section_header("Database Coverage", "Total scope of the clinical trials dataset")
+    # ── KPI Row ───────────────────────────────────────────────────────────────
+    st.markdown("### Database Coverage")
     kpi_row([
-        {"label": "Total Trials",       "value": kpis["total_trials"],       "icon": "🧪"},
-        {"label": "Active Trials",      "value": kpis["active_trials"],      "icon": "🔵"},
-        {"label": "Completed Trials",   "value": kpis["completed_trials"],   "icon": "✅"},
-        {"label": "Trials with Results","value": kpis["trials_with_results"],"icon": "📋"},
+        {"label": "Total Trials",        "value": kpis["total_trials"],       "icon": "🧪"},
+        {"label": "Active Trials",        "value": kpis["active_trials"],       "icon": "🔵"},
+        {"label": "Completed Trials",     "value": kpis["completed_trials"],    "icon": "✅"},
+        {"label": "Trials with Results",  "value": kpis["trials_with_results"], "icon": "📋"},
     ])
-    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     kpi_row([
-        {"label": "Unique Sponsors",   "value": kpis["unique_sponsors"],  "icon": "🏢"},
-        {"label": "Unique Drugs",      "value": kpis["unique_drugs"],     "icon": "💊"},
-        {"label": "Unique Conditions", "value": kpis["unique_conditions"],"icon": "🔬"},
-        {"label": "Trials with PROs",  "value": kpis["trials_with_pros"], "icon": "👤"},
+        {"label": "Unique Sponsors",     "value": kpis["unique_sponsors"],    "icon": "🏢"},
+        {"label": "Unique Drugs",        "value": kpis["unique_drugs"],       "icon": "💊"},
+        {"label": "Unique Conditions",   "value": kpis["unique_conditions"],  "icon": "🔬"},
+        {"label": "Trials with PROs",    "value": kpis["trials_with_pros"],   "icon": "👤"},
     ])
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Charts Section ────────────────────────────────────────────────────────
     if not filters.has_any_filter():
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
         filter_required_callout(
             "Please select at least one filter in the sidebar "
             "(indication, drug class, sponsor, phase, etc.) to view the charts."
         )
     else:
-        _section_header(
-            "Landscape Overview",
-            "Distribution of trials across phases, sponsors, conditions, and time",
-        )
-        with st.spinner("Loading charts…"):
+        with st.spinner("Loading charts..."):
+            # Charts Row 1
             col1, col2 = st.columns(2)
+
             with col1:
                 phase_df = get_trials_by_phase(filters)
                 if phase_df.empty:
@@ -164,6 +92,7 @@ def render(filters: FilterState) -> None:
                 else:
                     chart_tile(phase_bar(phase_df, x="phase", y="trial_count",
                                          title="Trial Count by Phase"))
+
             with col2:
                 time_df = get_trials_over_time(filters)
                 if time_df.empty:
@@ -173,7 +102,9 @@ def render(filters: FilterState) -> None:
                     chart_tile(area_chart(time_df, x="year", y="trial_count",
                                           title="Trials First Posted per Year"))
 
+            # Charts Row 2
             col3, col4 = st.columns(2)
+
             with col3:
                 sp_df = get_top_sponsors(filters, limit=15)
                 if sp_df.empty:
@@ -181,6 +112,7 @@ def render(filters: FilterState) -> None:
                 else:
                     chart_tile(bar_chart(sp_df.head(12), x="sponsor", y="trial_count",
                                          orientation="h", title="Top Sponsors by Trial Count"))
+
             with col4:
                 cond_df = get_top_conditions(filters, limit=15)
                 if cond_df.empty:
@@ -189,42 +121,32 @@ def render(filters: FilterState) -> None:
                     chart_tile(bar_chart(cond_df.head(12), x="condition", y="trial_count",
                                          orientation="h", title="Top MeSH Conditions"))
 
+            intv_df = get_top_interventions(filters, limit=20)
+            if not intv_df.empty:
+                chart_tile(bar_chart(intv_df.head(15), x="intervention", y="trial_count",
+                                     orientation="h", title="Top Drug Interventions by Trial Count"))
+            else:
+                no_data_callout("interventions")
+
     # ── Navigation Cards ──────────────────────────────────────────────────────
-    st.markdown(
-        "<hr style='margin:32px 0 0 0;border:none;border-top:1px solid #E5E7EB;'>",
-        unsafe_allow_html=True,
-    )
-    _section_header(
-        "Explore Platform Modules",
-        "Navigate to any analysis module using the tabs above or the shortcuts below",
-    )
+    st.markdown("<hr style='margin:28px 0 16px 0;border-color:#E5E7EB;'>",
+                unsafe_allow_html=True)
+    st.markdown("### Explore Platform Modules")
     st.markdown(_NAV_CSS, unsafe_allow_html=True)
 
     nav_pages = [p for p in PAGES if p["key"] != "home"]
+    # Render 3-per-row
     for i in range(0, len(nav_pages), 3):
         row_pages = nav_pages[i: i + 3]
-        # Pad the last row to keep columns consistent
-        pad = 3 - len(row_pages)
-        cols = st.columns(3)
+        cols = st.columns(len(row_pages))
         for col, p in zip(cols, row_pages):
             with col:
-                desc_html = (
-                    f'<div class="nav-desc">{p["desc"]}</div>'
-                    if p.get("desc") else ""
-                )
                 st.markdown(
-                    f'<div class="nav-card">'
-                    f'  <div class="nav-icon-wrap">{p["icon"]}</div>'
-                    f'  <div class="nav-body">'
-                    f'    <div class="nav-title">{p["label"]}</div>'
-                    f'    {desc_html}'
-                    f'  </div>'
-                    f'  <div class="nav-arrow">›</div>'
-                    f'</div>',
+                    f"""
+                    <div class="nav-card">
+                        <div class="nav-icon">{p['icon']}</div>
+                        <div class="nav-title">{p['label']}</div>
+                    </div>
+                    """,
                     unsafe_allow_html=True,
                 )
-        if pad:
-            # Consume remaining columns silently (empty cells keep grid uniform)
-            for col in cols[3 - pad:]:
-                with col:
-                    st.empty()

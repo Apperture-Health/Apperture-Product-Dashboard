@@ -4,7 +4,7 @@ import { startTransition, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useFilters } from "@/hooks/useFilters";
-import { usePageData } from "@/hooks/usePageData";
+import { useProgressivePageData } from "@/hooks/useProgressivePageData";
 import { activeFilterSummary, slugToMeta } from "@/lib/transforms";
 import { PAGE_META } from "@/lib/constants";
 import { AuthSession } from "@/lib/types";
@@ -14,6 +14,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { FilterSummaryBar } from "@/components/FilterSummaryBar";
 import { AlertCallout } from "@/components/ui/AlertCallout";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TopTabs } from "@/components/ui/TopTabs";
 
@@ -31,6 +32,7 @@ import { TrialGroupsPage } from "@/components/pages/TrialGroupsPage";
 import { SafetyPage } from "@/components/pages/SafetyPage";
 import { AskTheDataPage } from "@/components/pages/AskTheDataPage";
 import { ScoresPage } from "@/components/pages/ScoresPage";
+import { RealWorldSafetyPage } from "@/components/pages/RealWorldSafetyPage";
 
 export function DashboardShell() {
   const router = useRouter();
@@ -45,7 +47,16 @@ export function DashboardShell() {
   const visibleLabels = session?.visible_tabs?.length ? session.visible_tabs : ["🏠 Home"];
   const currentPage = slugToMeta(requestedTab, visibleLabels);
 
-  const { pageData, pageLoading, pageError, pageSummaries, summaryLoading, requestSummary } = usePageData({
+  const {
+    partialData,
+    kpisReady,
+    fullyLoaded,
+    pageLoading,
+    pageError,
+    pageSummaries,
+    summaryLoading,
+    requestSummary,
+  } = useProgressivePageData({
     pageKey: currentPage.key,
     filters,
     authenticated: session?.authenticated ?? false,
@@ -87,11 +98,13 @@ export function DashboardShell() {
 
   const pageProps = {
     filters,
-    pageData,
+    pageData: partialData,
     updateFilter,
     pageSummaries,
     summaryLoading,
     requestSummary,
+    kpisReady,
+    fullyLoaded,
   };
 
   const visiblePages = PAGE_META.filter((page) => visibleLabels.includes(page.label));
@@ -112,6 +125,7 @@ export function DashboardShell() {
         <TopTabs pages={visiblePages} activeKey={currentPage.key} onChange={updateQueryTab} />
         <PageHeader page={currentPage} />
         <FilterSummaryBar active={activeFilterSummary(filters)} />
+        {kpisReady && !fullyLoaded ? <ProgressBar /> : null}
 
         {pageError ? (
           <AlertCallout tone="danger" title="Error">{pageError}</AlertCallout>
@@ -119,15 +133,15 @@ export function DashboardShell() {
 
         {pageLoading ? <LoadingScreen message="Loading page data..." compact /> : null}
 
-        {!pageLoading && currentPage.key === "home" ? (
+        {kpisReady && currentPage.key === "home" ? (
           <HomePage {...pageProps} visibleLabels={visibleLabels} onNavigate={updateQueryTab} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "pipeline" ? (
+        {kpisReady && currentPage.key === "pipeline" ? (
           <PipelinePage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "drug-detail" ? (
+        {kpisReady && currentPage.key === "drug-detail" ? (
           <DrugDetailPage {...pageProps} />
         ) : null}
 
@@ -159,11 +173,11 @@ export function DashboardShell() {
           <SafetyPage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "drug-pricing" ? (
+        {kpisReady && currentPage.key === "drug-pricing" ? (
           <DrugPricingPage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "market-access" ? (
+        {kpisReady && currentPage.key === "market-access" ? (
           <MarketAccessPage
             {...pageProps}
             marketAccessYear={marketAccessYear}
@@ -177,6 +191,10 @@ export function DashboardShell() {
 
         {!pageLoading && currentPage.key === "scores" ? (
           <ScoresPage {...pageProps} />
+        ) : null}
+
+        {kpisReady && currentPage.key === "real-world-safety" ? (
+          <RealWorldSafetyPage {...pageProps} />
         ) : null}
       </main>
 

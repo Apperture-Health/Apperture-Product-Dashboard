@@ -22,9 +22,13 @@ DRUGS_INDICATION_COL = "indication_name"
 DRUGS_ATC_COL        = "atc_class_name"
 DRUGS_GENERIC_COL    = "generic_name"
 
-# ── AACT DB – browse_conditions (global indication source) ───────────────────
-# The global "Indication" filter uses ctgov.browse_conditions mesh-list terms,
-# NOT drug_indications. drug_indications is used only as a downstream filter.
+# ── AACT DB – conditions (global indication source) ──────────────────────────
+# The global "Indication" filter uses ctgov.conditions raw condition names
+# (via disease_bucket_mapping.json display-label → raw-name resolution).
+# BROWSE_CONDITIONS constants kept for reference; no longer used in queries.
+CONDITIONS_TABLE    = "ctgov.conditions"
+CONDITIONS_NAME_COL = "downcase_name"
+
 BROWSE_CONDITIONS_TABLE     = "ctgov.browse_conditions"
 BROWSE_CONDITIONS_MESH_TERM = "downcase_mesh_term"
 BROWSE_CONDITIONS_MESH_TYPE = "mesh_type"
@@ -83,6 +87,9 @@ STATUS_COLORS = {
 }
 
 CATEGORICAL_PALETTE = COLORS["chart_sequence"]
+
+# ── FAERS DB ──────────────────────────────────────────────────────────────────
+DB_FDAERS = "fdaers"
 
 # ── Pricing DB ────────────────────────────────────────────────────────────────
 DB_PRICING                = "pricing"

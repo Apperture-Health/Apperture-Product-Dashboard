@@ -6,6 +6,7 @@ import { hasAnyFilter, yearLabel } from "@/lib/transforms";
 import { PAGE_META, MODULE_DESC } from "@/lib/constants";
 import { PageMeta } from "@/lib/types";
 import { AlertCallout } from "@/components/ui/AlertCallout";
+import { ChartSkeleton } from "@/components/ui/ChartSkeleton";
 import { ChartTile } from "@/components/ui/ChartTile";
 import { MetricRow } from "@/components/ui/MetricRow";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -64,20 +65,28 @@ export function HomePage({ filters, pageData, visibleLabels, onNavigate }: HomeP
               subtitle="Distribution of trials across phases, sponsors, conditions, and time"
             />
             <TwoCol>
-              {toRecs(pageData?.trialsByPhase).length
-                ? <ChartTile title="Trial Count by Phase" figure={barFigure(toRecs(pageData?.trialsByPhase), "phase", "trial_count")} />
-                : noData("phase distribution")}
-              {toRecs(pageData?.trialsOverTime).length
-                ? <ChartTile title="Trials First Posted per Year" figure={areaFigure(toRecs(pageData?.trialsOverTime).map((row) => ({ ...row, year: yearLabel(row.year) })), "year", "trial_count")} />
-                : noData("trial timeline")}
+              {!pageData?.trialsByPhase
+                ? <ChartSkeleton />
+                : toRecs(pageData.trialsByPhase).length
+                  ? <ChartTile title="Trial Count by Phase" figure={barFigure(toRecs(pageData.trialsByPhase), "phase", "trial_count")} />
+                  : noData("phase distribution")}
+              {!pageData?.trialsOverTime
+                ? <ChartSkeleton />
+                : toRecs(pageData.trialsOverTime).length
+                  ? <ChartTile title="Trials First Posted per Year" figure={areaFigure(toRecs(pageData.trialsOverTime).map((row) => ({ ...row, year: yearLabel(row.year) })), "year", "trial_count")} />
+                  : noData("trial timeline")}
             </TwoCol>
             <TwoCol>
-              {toRecs(pageData?.topSponsors).length
-                ? <ChartTile title="Top Sponsors by Trial Count" figure={barFigure(toRecs(pageData?.topSponsors).slice(0, 12), "sponsor", "trial_count", false)} />
-                : noData("sponsors")}
-              {toRecs(pageData?.topConditions).length
-                ? <ChartTile title="Top MeSH Conditions" figure={barFigure(toRecs(pageData?.topConditions).slice(0, 12), "condition", "trial_count", true)} />
-                : noData("conditions")}
+              {!pageData?.topSponsors
+                ? <ChartSkeleton />
+                : toRecs(pageData.topSponsors).length
+                  ? <ChartTile title="Top Sponsors by Trial Count" figure={barFigure(toRecs(pageData.topSponsors).slice(0, 12), "sponsor", "trial_count", false)} />
+                  : noData("sponsors")}
+              {!pageData?.topConditions
+                ? <ChartSkeleton />
+                : toRecs(pageData.topConditions).length
+                  ? <ChartTile title="Top MeSH Conditions" figure={barFigure(toRecs(pageData.topConditions).slice(0, 12), "condition", "trial_count", true)} />
+                  : noData("conditions")}
             </TwoCol>
           </>
         )}

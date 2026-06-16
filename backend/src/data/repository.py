@@ -8,21 +8,129 @@ Optimisation rules enforced:
   - No SELECT *
   - LIMIT on large result sets
   - subjects_affected > 0 enforced on adverse events
-  - browse_conditions: always filter mesh_type = 'mesh-list'
 """
 from __future__ import annotations
+
+import json
+from functools import lru_cache
+from pathlib import Path
 
 import pandas as pd
 from utils.runtime import runtime as st
 
-from data.db import query_aact, query_aact_ae, query_aact_uncached, query_pricing, query_drugs, query_market_access
-from data.query_builder import QueryBuilder
+from data.db import (
+    query_aact,
+    query_aact_ae,
+    query_aact_uncached,
+    query_pricing,
+    query_drugs,
+    query_market_access,
+    query_fdaers,
+)
+from data.query_builder import QueryBuilder, _list_clause
 from utils.filters import FilterState
 from config.settings import (
     MAX_TABLE_ROWS, ANNUAL_PRICING_TABLE, HISTORICAL_PRICING_TABLE,
     DRUG_CLASSES_TABLE, DRUGS_ATC_COL, DRUGS_BRAND_COL, DRUG_INDICATIONS_TABLE, DRUGS_INDICATION_COL,
     MA_TABLE_2025, MA_TABLE_2026,
 )
+
+
+_MESH_TO_INDICATION_MAP_PATH = (
+    Path(__file__).resolve().parents[2] / "catalogs" / "mesh_to_indication_map.json"
+)
+
+
+@lru_cache(maxsize=1)
+def _load_mesh_to_indication_map() -> dict[str, list[str]]:
+    """Load the pre-built MeSH-to-indication mapping from disk once per process."""
+    if not _MESH_TO_INDICATION_MAP_PATH.exists():
+        return {}
+    return json.loads(_MESH_TO_INDICATION_MAP_PATH.read_text(encoding="utf-8"))
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def _resolve_brands_from_mesh_indication(mesh_term: str) -> list[str]:
+    """
+    Resolve brand names for a global condition using the JSON mapping file.
+    Looks up the condition in mesh_to_indication_map.json, then queries
+    public.drug_indications for matching brands.
+    """
+    if not mesh_term:
+        return []
+    mesh_map = _load_mesh_to_indication_map()
+    matched_indications = mesh_map.get(mesh_term.lower().strip(), [])
+    if not matched_indications:
+        return []
+    sql = f"""
+        SELECT DISTINCT brand_name
+        FROM {DRUG_INDICATIONS_TABLE}
+        WHERE LOWER({DRUGS_INDICATION_COL}) = ANY(:indications)
+          AND brand_name IS NOT NULL
+        ORDER BY 1
+    """
+    df = query_drugs(sql, {"indications": [v.lower() for v in matched_indications]})
+    return df["brand_name"].dropna().tolist() if not df.empty else []
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def _resolve_relevant_brands_for_global_filters(
+    indication: str | None,
+    atc_class: str | None,
+) -> list[str]:
+    """
+    Resolve the relevant brand set for the selected global filters from the
+    drugs-side sources (not from co-enrolled trial rows).
+
+    - indication → mesh_to_indication_map.json → public.drug_indications
+    - atc_class  → public.drug_classes
+    - both       → intersection of the two brand sets
+    """
+    mesh_brands: list[str] | None = None
+    atc_brands: list[str] | None = None
+
+    if indication:
+        mesh_brands = _resolve_brands_from_mesh_indication(indication)
+
+    if atc_class:
+        sql = f"""
+            SELECT DISTINCT {DRUGS_BRAND_COL} AS brand_name
+            FROM {DRUG_CLASSES_TABLE}
+            WHERE {DRUGS_ATC_COL} = :atc_class
+              AND {DRUGS_BRAND_COL} IS NOT NULL
+            ORDER BY 1
+        """
+        df = query_drugs(sql, {"atc_class": atc_class})
+        atc_brands = df["brand_name"].dropna().tolist() if not df.empty else []
+
+    if mesh_brands is not None and atc_brands is not None:
+        atc_set = set(atc_brands)
+        return [b for b in mesh_brands if b in atc_set]
+    if mesh_brands is not None:
+        return mesh_brands
+    if atc_brands is not None:
+        return atc_brands
+    return []
+
+
+OUTC_LABELS = {
+    "DE": "Death",
+    "LT": "Life-Threatening",
+    "HO": "Hospitalisation",
+    "DS": "Disability",
+    "CA": "Congenital Anomaly",
+    "RI": "Required Intervention",
+    "OT": "Other",
+}
+
+OCCP_LABELS = {
+    "MD": "Physician",
+    "PH": "Pharmacist",
+    "OT": "Other HCP",
+    "LW": "Lawyer",
+    "CN": "Consumer",
+    "HP": "Health Professional",
+}
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -140,8 +248,30 @@ def get_filter_options(indication: str | None, atc_class: str | None) -> dict:
             return []
         return df.iloc[:, 0].dropna().tolist()
 
-    # Brands in scope — computed first so we can use them to scope drug_indications
-    brands_list = _vals(query_aact(sql_brands, nct_params))
+    # Brands in scope — computed first so we can use them to scope drug_indications.
+    # When the indication is in the MeSH map, use those brands to narrow results.
+    # Falls back to all in-scope brands via nct_clause if map returns nothing.
+    relevant_brands = _resolve_relevant_brands_for_global_filters(indication, atc_class)
+    brands_list: list = []
+    if indication or atc_class:
+        if relevant_brands:
+            brand_params = dict(nct_params)
+            brand_in = _list_clause("dt.brand_name", relevant_brands, brand_params, "gfbn")
+            sql_brands_scoped = f"""
+                SELECT DISTINCT dt.brand_name
+                FROM public.drug_trials dt
+                JOIN ctgov.studies s ON s.nct_id = dt.nct_id
+                WHERE {nct_clause}
+                  AND {brand_in}
+                  AND dt.brand_name IS NOT NULL
+                ORDER BY dt.brand_name
+                LIMIT 300
+            """
+            brands_list = _vals(query_aact(sql_brands_scoped, brand_params))
+        else:
+            brands_list = _vals(query_aact(sql_brands, nct_params))
+    else:
+        brands_list = _vals(query_aact(sql_brands, nct_params))
 
     # Drug label indications (DRUGS DB, scoped by brands currently in scope).
     # These populate the downstream "Drug Indication" filter in the Sponsor/Drug tab.
@@ -467,35 +597,53 @@ def get_country_distribution(filters: FilterState, limit: int = 20) -> pd.DataFr
 #  PIPELINE LANDSCAPE
 # ════════════════════════════════════════════════════════════════════════════
 
-@st.cache_data(ttl=300, show_spinner=False)
-def get_pipeline_kpis(indication: str | None, sponsors: tuple[str, ...] = ()) -> dict:
-    """Pipeline KPIs from onco_pipeline_trials, filtered by condition matching indication."""
-    params: dict = {}
-    cond_where = ""
-    if indication:
-        cond_where = "WHERE LOWER(pt.condition) LIKE :ind_like"
-        params["ind_like"] = f"%{indication.lower()}%"
+def _pipeline_where(
+    bucket: str | None,
+    sponsors: tuple[str, ...],
+    pipeline_classes: tuple[str, ...],
+    params: dict,
+    base: str = "WHERE TRUE",
+) -> str:
+    """Build a WHERE clause fragment for public.pipeline_trials queries."""
+    clause = base
+    clause += " AND pt.pipeline_class NOT IN ('lifecycle study', 'unclassified')"
+    if bucket:
+        clause += " AND pt.trial_bucket = :bucket"
+        params["bucket"] = bucket
     if sponsors:
         sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
-        sp_clause = "AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
-        cond_where = (cond_where + " " + sp_clause) if cond_where else ("WHERE " + sp_clause[4:])
+        clause += " AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
         params.update(sp_params)
+    if pipeline_classes:
+        pc_params = {f"_pc{i}": c for i, c in enumerate(pipeline_classes)}
+        clause += " AND pt.pipeline_class IN (" + ", ".join(f":_pc{i}" for i in range(len(pipeline_classes))) + ")"
+        params.update(pc_params)
+    return clause
 
-    pros_where = cond_where.replace("WHERE", "WHERE", 1)  # same conditions apply to PRO query
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pipeline_kpis(
+    bucket: str | None,
+    sponsors: tuple[str, ...] = (),
+    pipeline_classes: tuple[str, ...] = (),
+) -> dict:
+    """Pipeline KPIs from pipeline_trials, filtered by trial_bucket direct match."""
+    params: dict = {}
+    cond_where = _pipeline_where(bucket, sponsors, pipeline_classes, params)
     sql = f"""
         SELECT
             COUNT(DISTINCT pt.nct_id)            AS pipeline_trials,
             COUNT(DISTINCT pt.intervention_name) AS unique_assets,
             COUNT(DISTINCT pt.sponsor_name)      AS active_sponsors,
-            COUNT(DISTINCT pt.condition)         AS indications_covered
-        FROM public.onco_pipeline_trials pt
+            COUNT(DISTINCT pt.trial_bucket)      AS indications_covered
+        FROM public.pipeline_trials pt
         {cond_where}
     """
     sql_pros = f"""
         SELECT COUNT(DISTINCT pp.nct_id) AS with_pros
         FROM public.onco_pipeline_design_outcomes_pro pp
-        JOIN public.onco_pipeline_trials pt ON pt.nct_id = pp.nct_id
-        {pros_where}
+        JOIN public.pipeline_trials pt ON pt.nct_id = pp.nct_id
+        {cond_where}
     """
     df     = query_aact(sql,      params)
     pro_df = query_aact(sql_pros, params)
@@ -510,22 +658,21 @@ def get_pipeline_kpis(indication: str | None, sponsors: tuple[str, ...] = ()) ->
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def get_pipeline_by_sponsor(indication: str | None, sponsors: tuple[str, ...] = (), limit: int = 20) -> pd.DataFrame:
+def get_pipeline_by_sponsor(
+    bucket: str | None,
+    sponsors: tuple[str, ...] = (),
+    pipeline_classes: tuple[str, ...] = (),
+    limit: int = 20,
+) -> pd.DataFrame:
     params: dict = {}
-    cond_where = "WHERE pt.sponsor_name IS NOT NULL"
-    if indication:
-        cond_where += " AND LOWER(pt.condition) LIKE :ind_like"
-        params["ind_like"] = f"%{indication.lower()}%"
-    if sponsors:
-        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
-        cond_where += " AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
-        params.update(sp_params)
+    cond_where = _pipeline_where(bucket, sponsors, pipeline_classes, params,
+                                  base="WHERE pt.sponsor_name IS NOT NULL")
     sql = f"""
         SELECT
             pt.sponsor_name              AS sponsor,
             COUNT(DISTINCT pt.nct_id)   AS pipeline_trials,
             COUNT(DISTINCT pt.intervention_name) AS unique_assets
-        FROM public.onco_pipeline_trials pt
+        FROM public.pipeline_trials pt
         {cond_where}
         GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
     """
@@ -533,22 +680,21 @@ def get_pipeline_by_sponsor(indication: str | None, sponsors: tuple[str, ...] = 
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def get_pipeline_by_indication(indication: str | None, sponsors: tuple[str, ...] = (), limit: int = 25) -> pd.DataFrame:
+def get_pipeline_by_indication(
+    bucket: str | None,
+    sponsors: tuple[str, ...] = (),
+    pipeline_classes: tuple[str, ...] = (),
+    limit: int = 25,
+) -> pd.DataFrame:
     params: dict = {}
-    cond_where = "WHERE pt.condition IS NOT NULL"
-    if indication:
-        cond_where += " AND LOWER(pt.condition) LIKE :ind_like"
-        params["ind_like"] = f"%{indication.lower()}%"
-    if sponsors:
-        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
-        cond_where += " AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
-        params.update(sp_params)
+    cond_where = _pipeline_where(bucket, sponsors, pipeline_classes, params,
+                                  base="WHERE pt.trial_bucket IS NOT NULL")
     sql = f"""
         SELECT
-            pt.condition                 AS condition,
+            pt.trial_bucket              AS condition,
             COUNT(DISTINCT pt.nct_id)   AS trial_count,
             COUNT(DISTINCT pt.sponsor_name) AS sponsors
-        FROM public.onco_pipeline_trials pt
+        FROM public.pipeline_trials pt
         {cond_where}
         GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
     """
@@ -556,22 +702,21 @@ def get_pipeline_by_indication(indication: str | None, sponsors: tuple[str, ...]
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def get_pipeline_top_interventions(indication: str | None, sponsors: tuple[str, ...] = (), limit: int = 25) -> pd.DataFrame:
+def get_pipeline_top_interventions(
+    bucket: str | None,
+    sponsors: tuple[str, ...] = (),
+    pipeline_classes: tuple[str, ...] = (),
+    limit: int = 25,
+) -> pd.DataFrame:
     params: dict = {}
-    cond_where = "WHERE pt.intervention_name IS NOT NULL"
-    if indication:
-        cond_where += " AND LOWER(pt.condition) LIKE :ind_like"
-        params["ind_like"] = f"%{indication.lower()}%"
-    if sponsors:
-        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
-        cond_where += " AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
-        params.update(sp_params)
+    cond_where = _pipeline_where(bucket, sponsors, pipeline_classes, params,
+                                  base="WHERE pt.intervention_name IS NOT NULL")
     sql = f"""
         SELECT
             pt.intervention_name         AS intervention,
             COUNT(DISTINCT pt.nct_id)   AS trial_count,
             COUNT(DISTINCT pt.sponsor_name) AS sponsors
-        FROM public.onco_pipeline_trials pt
+        FROM public.pipeline_trials pt
         {cond_where}
         GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
     """
@@ -579,37 +724,38 @@ def get_pipeline_top_interventions(indication: str | None, sponsors: tuple[str, 
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def get_pipeline_sponsor_indication_heatmap(indication: str | None, sponsors: tuple[str, ...] = ()) -> pd.DataFrame:
-    """Return sponsor × condition counts for heatmap."""
+def get_pipeline_sponsor_indication_heatmap(
+    bucket: str | None,
+    sponsors: tuple[str, ...] = (),
+    pipeline_classes: tuple[str, ...] = (),
+) -> pd.DataFrame:
+    """Return sponsor × bucket counts for heatmap."""
     params: dict = {}
-    cond_where = "WHERE pt.sponsor_name IS NOT NULL AND pt.condition IS NOT NULL"
-    if indication:
-        cond_where += " AND LOWER(pt.condition) LIKE :ind_like"
-        params["ind_like"] = f"%{indication.lower()}%"
-    if sponsors:
-        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
-        cond_where += " AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
-        params.update(sp_params)
+    cond_where = _pipeline_where(
+        bucket, sponsors, pipeline_classes, params,
+        base="WHERE pt.sponsor_name IS NOT NULL AND pt.trial_bucket IS NOT NULL",
+    )
+    bare = cond_where.replace("pt.", "")
     sql = f"""
         WITH ranked_sponsors AS (
             SELECT sponsor_name, COUNT(DISTINCT nct_id) AS cnt
-            FROM public.onco_pipeline_trials
-            {cond_where.replace('pt.', '')}
+            FROM public.pipeline_trials
+            {bare}
             GROUP BY 1 ORDER BY 2 DESC LIMIT 15
         ),
-        ranked_conditions AS (
-            SELECT condition, COUNT(DISTINCT nct_id) AS cnt
-            FROM public.onco_pipeline_trials
-            {cond_where.replace('pt.', '')}
+        ranked_buckets AS (
+            SELECT trial_bucket, COUNT(DISTINCT nct_id) AS cnt
+            FROM public.pipeline_trials
+            {bare}
             GROUP BY 1 ORDER BY 2 DESC LIMIT 15
         )
         SELECT
             pt.sponsor_name  AS sponsor,
-            pt.condition     AS condition,
+            pt.trial_bucket  AS condition,
             COUNT(DISTINCT pt.nct_id) AS trial_count
-        FROM public.onco_pipeline_trials pt
+        FROM public.pipeline_trials pt
         JOIN ranked_sponsors rs ON rs.sponsor_name = pt.sponsor_name
-        JOIN ranked_conditions rc ON rc.condition = pt.condition
+        JOIN ranked_buckets rb ON rb.trial_bucket = pt.trial_bucket
         {cond_where}
         GROUP BY 1, 2
     """
@@ -617,54 +763,73 @@ def get_pipeline_sponsor_indication_heatmap(indication: str | None, sponsors: tu
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def get_pipeline_pro_usage(indication: str | None, sponsors: tuple[str, ...] = (), limit: int = 20) -> pd.DataFrame:
+def get_pipeline_pro_usage(
+    bucket: str | None,
+    sponsors: tuple[str, ...] = (),
+    pipeline_classes: tuple[str, ...] = (),
+    limit: int = 20,
+) -> pd.DataFrame:
     params: dict = {}
-    ind_filter = ""
-    if indication:
-        ind_filter = "AND LOWER(pt.condition) LIKE :ind_like"
-        params["ind_like"] = f"%{indication.lower()}%"
-    sp_filter = ""
-    if sponsors:
-        sp_params = {f"_sp{i}": s for i, s in enumerate(sponsors)}
-        sp_filter = "AND pt.sponsor_name IN (" + ", ".join(f":_sp{i}" for i in range(len(sponsors))) + ")"
-        params.update(sp_params)
+    cond_where = _pipeline_where(bucket, sponsors, pipeline_classes, params)
+    cond_where += " AND pp.instrument_name IS NOT NULL"
     sql = f"""
         SELECT
             pp.instrument_name,
             COUNT(DISTINCT pp.nct_id) AS trial_count
         FROM public.onco_pipeline_design_outcomes_pro pp
-        JOIN public.onco_pipeline_trials pt ON pt.nct_id = pp.nct_id
-        WHERE pp.instrument_name IS NOT NULL
-          {ind_filter}
-          {sp_filter}
+        JOIN public.pipeline_trials pt ON pt.nct_id = pp.nct_id
+        {cond_where}
         GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
     """
     return query_aact(sql, params)
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def get_pipeline_trials_table(indication: str | None, limit: int = MAX_TABLE_ROWS) -> pd.DataFrame:
+def get_pipeline_trials_table(
+    bucket: str | None,
+    pipeline_classes: tuple[str, ...] = (),
+    limit: int = MAX_TABLE_ROWS,
+) -> pd.DataFrame:
     params: dict = {}
-    cond_where = ""
-    if indication:
-        cond_where = "WHERE LOWER(pt.condition) LIKE :ind_like"
-        params["ind_like"] = f"%{indication.lower()}%"
+    cond_where = _pipeline_where(bucket, (), pipeline_classes, params)
     sql = f"""
         SELECT
             pt.nct_id,
             pt.sponsor_name,
             pt.intervention_name,
-            pt.condition,
+            pt.trial_bucket,
+            pt.pipeline_class,
             s.phase,
             s.overall_status,
             s.enrollment,
             s.start_date,
             s.primary_completion_date
-        FROM public.onco_pipeline_trials pt
+        FROM public.pipeline_trials pt
         LEFT JOIN ctgov.studies s ON s.nct_id = pt.nct_id
         {cond_where}
         ORDER BY s.start_date DESC NULLS LAST
         LIMIT {limit}
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_pipeline_by_class(
+    bucket: str | None,
+    sponsors: tuple[str, ...] = (),
+    pipeline_classes: tuple[str, ...] = (),
+) -> pd.DataFrame:
+    params: dict = {}
+    cond_where = _pipeline_where(bucket, sponsors, pipeline_classes, params,
+                                  base="WHERE pt.pipeline_class IS NOT NULL")
+    sql = f"""
+        SELECT
+            pt.pipeline_class            AS pipeline_class,
+            COUNT(DISTINCT pt.nct_id)   AS trial_count,
+            COUNT(DISTINCT pt.sponsor_name) AS sponsors
+        FROM public.pipeline_trials pt
+        {cond_where}
+        GROUP BY 1 ORDER BY 2 DESC
     """
     return query_aact(sql, params)
 
@@ -675,8 +840,30 @@ def get_pipeline_trials_table(indication: str | None, limit: int = MAX_TABLE_ROW
 
 @st.cache_data(ttl=300, show_spinner=False)
 def get_drug_trials(filters: FilterState) -> pd.DataFrame:
+    from data.query_builder import resolve_brand_names_from_drug_indication
+
     qb = QueryBuilder(filters)
     scope_clause, params = qb.study_scope_clause("s")
+
+    # Restrict dt.brand_name to brands actually in scope to avoid co-enrolled
+    # drugs from other classes appearing as extra rows in the trial list.
+    restricted_brands: list[str] = []
+    if qb.brand_names:
+        restricted_brands.extend(qb.brand_names)
+    if filters.brand_name:
+        restricted_brands.extend(filters.brand_name)
+    if filters.drug_indication:
+        di_brands = resolve_brand_names_from_drug_indication(filters.drug_indication)
+        restricted_brands.extend(di_brands)
+    restricted_brands = list(dict.fromkeys(restricted_brands))
+
+    brand_filter = ""
+    if restricted_brands:
+        bn_p: dict = {}
+        bn_frag = _list_clause("dt.brand_name", restricted_brands, bn_p, "dtbf")
+        params.update(bn_p)
+        brand_filter = f"AND {bn_frag}"
+
     sql = f"""
         SELECT
             s.nct_id,
@@ -694,6 +881,7 @@ def get_drug_trials(filters: FilterState) -> pd.DataFrame:
         LEFT JOIN ctgov.sponsors sp
                ON sp.nct_id = s.nct_id AND sp.lead_or_collaborator = 'lead'
         WHERE {scope_clause}
+          {brand_filter}
         ORDER BY s.start_date DESC NULLS LAST
         LIMIT 500
     """
@@ -1441,6 +1629,72 @@ def get_score_by_drug(filters: FilterState, category: str,
     return query_aact(sql, params)
 
 
+@st.cache_data(ttl=300, show_spinner=False)
+def get_trials_with_outcomes(filters: FilterState) -> pd.DataFrame:
+    """
+    Distinct trials that have at least one numeric outcome measurement,
+    filtered by the active FilterState. Used for the trial comparison selector.
+
+    Uses EXISTS instead of joining through outcome_measurements to avoid
+    scanning the full measurements table; results_first_submitted_date IS NOT NULL
+    is a cheap indexed pre-filter that eliminates trials without posted results.
+    """
+    qb = QueryBuilder(filters)
+    scope_clause, params = qb.study_scope_clause("s")
+    nct_where = f"AND {scope_clause}" if scope_clause else ""
+    sql = f"""
+        SELECT
+            s.nct_id,
+            s.brief_title,
+            (SELECT sp.name
+             FROM ctgov.sponsors sp
+             WHERE sp.nct_id = s.nct_id
+               AND sp.lead_or_collaborator = 'lead'
+             LIMIT 1)        AS lead_sponsor,
+            s.phase,
+            s.overall_status,
+            s.enrollment
+        FROM ctgov.studies s
+        WHERE s.results_first_submitted_date IS NOT NULL
+          AND EXISTS (
+              SELECT 1
+              FROM ctgov.outcomes o
+              JOIN ctgov.outcome_measurements om ON om.outcome_id = o.id
+              WHERE o.nct_id = s.nct_id
+                AND om.param_value_num IS NOT NULL
+          )
+          {nct_where}
+        ORDER BY s.start_date DESC NULLS LAST
+        LIMIT 500
+    """
+    return query_aact(sql, params)
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def get_outcome_data_for_trial(nct_id: str) -> pd.DataFrame:
+    """
+    Numeric outcome measurements for a single trial.
+
+    Drives from ctgov.outcomes (indexed on nct_id) rather than the large
+    outcome_measurements table for better query performance.
+    """
+    sql = """
+        SELECT
+            om.title          AS outcome_title,
+            om.units,
+            om.param_type,
+            om.param_value_num,
+            rg.title          AS group_name
+        FROM ctgov.outcomes o
+        JOIN ctgov.outcome_measurements om ON om.outcome_id = o.id
+        LEFT JOIN ctgov.result_groups rg   ON om.result_group_id = rg.id
+        WHERE o.nct_id = :nct_id
+          AND om.param_value_num IS NOT NULL
+        ORDER BY om.title, rg.title
+    """
+    return query_aact(sql, {"nct_id": nct_id})
+
+
 # ════════════════════════════════════════════════════════════════════════════
 #  PRO OVERVIEW
 # ════════════════════════════════════════════════════════════════════════════
@@ -1710,22 +1964,13 @@ def get_groups_per_trial_dist(filters: FilterState) -> pd.DataFrame:
 @st.cache_data(ttl=900, show_spinner=False)
 def get_ae_aggregates(filters: FilterState) -> dict:
     """
-    Single-query replacement for three separate calls:
-      get_adverse_event_summary  → result["kpis"]   (dict)
-      get_top_adverse_events     → result["top_ae"]  (DataFrame, top 25 by trial_count)
-      get_ae_by_organ_system     → result["organ"]   (DataFrame, top 50 by trial_count)
-
-    Uses one DB round-trip with a shared ae_filtered CTE so reported_events is
-    scanned only once per filter combination.
+    Single-query replacement for chart datasets used on the safety page:
+      get_top_adverse_events  → result["top_ae"]  (DataFrame, top 25 by trial_count)
+      get_ae_by_organ_system  → result["organ"]   (DataFrame, top 50 by trial_count)
     """
     import json
 
     _empty: dict = {
-        "kpis": {
-            "trials_with_ae": 0, "total_ae_records": 0,
-            "unique_ae_terms": 0, "unique_organ_systems": 0,
-            "total_subjects_affected": 0,
-        },
         "top_ae": pd.DataFrame(),
         "organ":  pd.DataFrame(),
     }
@@ -1745,18 +1990,7 @@ def get_ae_aggregates(filters: FilterState) -> dict:
             WHERE re.subjects_affected > 0
               AND re.adverse_event_term IS NOT NULL
         )
-        SELECT 'kpi' AS _rs, row_to_json(k.*)::text AS data
-        FROM (
-            SELECT
-                COUNT(DISTINCT nct_id)             AS trials_with_ae,
-                COUNT(*)                           AS total_ae_records,
-                COUNT(DISTINCT adverse_event_term) AS unique_ae_terms,
-                COUNT(DISTINCT organ_system)       AS unique_organ_systems,
-                SUM(subjects_affected)             AS total_subjects_affected
-            FROM ae_filtered
-        ) k
-        UNION ALL
-        SELECT 'top_terms', row_to_json(t.*)::text
+        SELECT 'top_terms' AS _rs, row_to_json(t.*)::text AS data
         FROM (
             SELECT adverse_event_term, organ_system,
                    COUNT(DISTINCT nct_id)  AS trial_count,
@@ -1781,22 +2015,13 @@ def get_ae_aggregates(filters: FilterState) -> dict:
         ) o
     """
     raw = query_aact_ae(sql, params)
-    if raw.empty:
+    if raw.empty or "_rs" not in raw.columns or "data" not in raw.columns:
         return _empty
 
     result: dict = dict(_empty)
     for rs, group in raw.groupby("_rs"):
         rows = [json.loads(r) for r in group["data"]]
-        if rs == "kpi":
-            r = rows[0] if rows else {}
-            result["kpis"] = {
-                "trials_with_ae":          int(r.get("trials_with_ae",          0) or 0),
-                "total_ae_records":        int(r.get("total_ae_records",         0) or 0),
-                "unique_ae_terms":         int(r.get("unique_ae_terms",          0) or 0),
-                "unique_organ_systems":    int(r.get("unique_organ_systems",     0) or 0),
-                "total_subjects_affected": int(r.get("total_subjects_affected",  0) or 0),
-            }
-        elif rs == "top_terms":
+        if rs == "top_terms":
             result["top_ae"] = pd.DataFrame(rows)
         elif rs == "organ_systems":
             result["organ"] = pd.DataFrame(rows)
@@ -2711,7 +2936,6 @@ def get_ma_tier_grid(filters: FilterState, year: int = 2025, limit: int = 50) ->
 
 @st.cache_data(ttl=300, show_spinner=False)
 def get_ma_req_grid(filters: FilterState, year: int = 2025, limit: int = 50) -> pd.DataFrame:
-    """Requirement-only grid (brand × payer) for the PA/QL/SP checkbox chart."""
     brands = _get_pricing_brand_list(filters)
     where, params = _build_ma_where(brands)
     params["lim"] = limit
@@ -2725,3 +2949,203 @@ def get_ma_req_grid(filters: FilterState, year: int = 2025, limit: int = 50) -> 
         LIMIT :lim
     """
     return query_market_access(sql, params)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  REAL WORLD SAFETY  (FDA FAERS)
+# ════════════════════════════════════════════════════════════════════════════
+
+def _build_faers_brand_filter(brand_names: list[str], *, col: str = "dc.brand_name") -> tuple[str, dict]:
+    if not brand_names:
+        return "", {}
+    upper = [b.upper() for b in brand_names]
+    return f"AND UPPER({col}) = ANY(:brands)", {"brands": upper}
+
+
+def get_faers_brand_scope(filters: FilterState) -> tuple[list[str], str | None]:
+    brands = _get_pricing_brand_list(filters)
+    if brands:
+        if filters.indication_name and not filters.brand_name and not filters.atc_class_name:
+            note = (
+                f'Showing FAERS data for {len(brands)} drug(s) linked to '
+                f'"{filters.indication_name}" via the pre-built indication mapping.'
+            )
+            return [b.upper() for b in brands], note
+        return [b.upper() for b in brands], None
+
+    if filters.indication_name and not filters.brand_name and not filters.atc_class_name:
+        note = (
+            f'No drugs mapped to "{filters.indication_name}" in the indication catalog. '
+            "Select a Drug Class or Brand Name in the sidebar to scope FAERS manually."
+        )
+        return [], note
+
+    return [], None
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_faers_kpis(brand_names: tuple[str, ...]) -> dict:
+    brand_sql, params = _build_faers_brand_filter(list(brand_names))
+
+    sql = f"""
+        SELECT
+            COUNT(DISTINCT d.primaryid)          AS total_reports,
+            COUNT(DISTINCT r.pt)                 AS unique_reactions,
+            COUNT(DISTINCT o.primaryid)          AS serious_outcomes,
+            COUNT(DISTINCT UPPER(dc.brand_name)) AS unique_drugs
+        FROM demo d
+        JOIN public.drug_cases dc ON dc.primaryid = d.primaryid AND dc.role_cod = 'PS'
+        JOIN reac r ON r.primaryid = d.primaryid
+        LEFT JOIN outc o ON o.primaryid = d.primaryid
+        WHERE 1=1
+          {brand_sql}
+    """
+    df = query_fdaers(sql, params or None)
+    if df.empty:
+        return {"total_reports": 0, "unique_reactions": 0, "serious_outcomes": 0, "unique_drugs": 0}
+    row = df.iloc[0]
+    return {
+        "total_reports": int(row["total_reports"] or 0),
+        "unique_reactions": int(row["unique_reactions"] or 0),
+        "serious_outcomes": int(row["serious_outcomes"] or 0),
+        "unique_drugs": int(row["unique_drugs"] or 0),
+    }
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_top_reactions(brand_names: tuple[str, ...], limit: int = 20) -> pd.DataFrame:
+    brand_sql, params = _build_faers_brand_filter(list(brand_names), col="r.brand_name")
+    params = {**params, "lim": limit}
+
+    sql = f"""
+        SELECT
+            r.pt,
+            COALESCE(sm.soc, 'Unknown') AS soc,
+            COUNT(DISTINCT r.primaryid) AS report_count
+        FROM public.faers_ps_reac r
+        LEFT JOIN public.soc_map sm ON sm.english_pt = r.pt
+        WHERE 1=1
+          {brand_sql}
+        GROUP BY r.pt, COALESCE(sm.soc, 'Unknown')
+        ORDER BY report_count DESC, r.pt
+        LIMIT :lim
+    """
+    return query_fdaers(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_reactions_by_soc(brand_names: tuple[str, ...], limit: int = 20) -> pd.DataFrame:
+    brand_sql, params = _build_faers_brand_filter(list(brand_names), col="r.brand_name")
+    params = {**params, "lim": limit}
+
+    sql = f"""
+        SELECT
+            COALESCE(sm.soc, 'Unknown') AS soc,
+            COUNT(DISTINCT r.primaryid) AS report_count
+        FROM public.faers_ps_reac r
+        LEFT JOIN public.soc_map sm ON sm.english_pt = r.pt
+        WHERE 1=1
+          {brand_sql}
+        GROUP BY COALESCE(sm.soc, 'Unknown')
+        ORDER BY report_count DESC, soc
+        LIMIT :lim
+    """
+    return query_fdaers(sql, params)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_outcomes_distribution(brand_names: tuple[str, ...]) -> pd.DataFrame:
+    brand_sql, params = _build_faers_brand_filter(list(brand_names), col="o.brand_name")
+
+    sql = f"""
+        SELECT o.outc_cod, COUNT(DISTINCT o.primaryid) AS report_count
+        FROM public.faers_ps_outc o
+        WHERE 1=1
+          {brand_sql}
+        GROUP BY o.outc_cod
+        ORDER BY report_count DESC
+    """
+    df = query_fdaers(sql, params or None)
+    if not df.empty and "outc_cod" in df.columns:
+        df["outcome_label"] = df["outc_cod"].map(OUTC_LABELS).fillna(df["outc_cod"])
+    return df
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_outcome_brand_heatmap(brand_names: tuple[str, ...], limit: int = 10) -> pd.DataFrame:
+    if not brand_names:
+        return pd.DataFrame()
+
+    brand_sql, params = _build_faers_brand_filter(list(brand_names), col="o.brand_name")
+    params = {**params, "lim": limit}
+
+    sql = f"""
+        WITH top_brands AS (
+            SELECT o.brand_name, COUNT(DISTINCT o.primaryid) AS case_count
+            FROM public.faers_ps_outc o
+            WHERE 1=1 {brand_sql}
+            GROUP BY o.brand_name
+            ORDER BY case_count DESC, o.brand_name
+            LIMIT :lim
+        )
+        SELECT o.brand_name, o.outc_cod, COUNT(DISTINCT o.primaryid) AS case_count
+        FROM public.faers_ps_outc o
+        JOIN top_brands tb ON tb.brand_name = o.brand_name
+        GROUP BY o.brand_name, o.outc_cod
+        ORDER BY o.brand_name, o.outc_cod
+    """
+    df = query_fdaers(sql, params)
+    if df.empty:
+        return pd.DataFrame()
+
+    df["outcome_label"] = df["outc_cod"].map(OUTC_LABELS).fillna(df["outc_cod"])
+    pivot = (
+        df.pivot(index="brand_name", columns="outcome_label", values="case_count")
+        .fillna(0)
+        .astype(int)
+    )
+    return pivot
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_reaction_brand_heatmap(brand_names: tuple[str, ...], limit: int = 10) -> pd.DataFrame:
+    if not brand_names:
+        return pd.DataFrame()
+
+    brand_sql, params = _build_faers_brand_filter(list(brand_names), col="r.brand_name")
+    params = {**params, "lim": limit}
+
+    sql = f"""
+        WITH top_brands AS (
+            SELECT r.brand_name, COUNT(DISTINCT r.primaryid) AS case_count
+            FROM public.faers_ps_reac r
+            WHERE 1=1 {brand_sql}
+            GROUP BY r.brand_name
+            ORDER BY case_count DESC, r.brand_name
+            LIMIT :lim
+        ),
+        top_pts AS (
+            SELECT r.pt, COUNT(DISTINCT r.primaryid) AS case_count
+            FROM public.faers_ps_reac r
+            WHERE 1=1 {brand_sql}
+            GROUP BY r.pt
+            ORDER BY case_count DESC, r.pt
+            LIMIT :lim
+        )
+        SELECT r.brand_name, r.pt, COUNT(DISTINCT r.primaryid) AS case_count
+        FROM public.faers_ps_reac r
+        JOIN top_brands tb ON tb.brand_name = r.brand_name
+        JOIN top_pts tp ON tp.pt = r.pt
+        GROUP BY r.brand_name, r.pt
+        ORDER BY r.brand_name, r.pt
+    """
+    df = query_fdaers(sql, params)
+    if df.empty:
+        return pd.DataFrame()
+
+    pivot = (
+        df.pivot(index="brand_name", columns="pt", values="case_count")
+        .fillna(0)
+        .astype(int)
+    )
+    return pivot

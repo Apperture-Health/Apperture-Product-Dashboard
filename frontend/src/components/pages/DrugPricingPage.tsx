@@ -5,9 +5,11 @@ import { barFigure, multiLineFigure } from "@/lib/charts";
 import { hasAnyFilter, metricValue, yearLabel } from "@/lib/transforms";
 import { AgGridTable } from "@/components/ui/AgGridTable";
 import { AiSummaryBlock } from "@/components/ui/AiSummaryBlock";
+import { ChartSkeleton } from "@/components/ui/ChartSkeleton";
 import { ChartTile } from "@/components/ui/ChartTile";
 import { MetricRow } from "@/components/ui/MetricRow";
 import { SectionTabs } from "@/components/ui/SectionTabs";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
 import { PageProps, toRecs } from "./types";
 
 function filterRequired(message: string) {
@@ -20,7 +22,7 @@ function filterRequired(message: string) {
   );
 }
 
-export function DrugPricingPage({ filters, pageData, pageSummaries, summaryLoading, requestSummary }: PageProps) {
+export function DrugPricingPage({ filters, pageData, pageSummaries, summaryLoading, requestSummary, fullyLoaded }: PageProps) {
   const [subtab, setSubtab] = useState("cost");
   const kpis = (pageData?.kpis as Record<string, unknown>) ?? {};
 
@@ -53,27 +55,37 @@ export function DrugPricingPage({ filters, pageData, pageSummaries, summaryLoadi
               onChange={setSubtab}
             />
             {subtab === "cost" ? (
-              <ChartTile
-                title="Annual Cost Over Time per Drug"
-                figure={multiLineFigure(
-                  toRecs(pageData?.annualCostPerBrandOverTime).map((row) => ({ ...row, quarter_start: yearLabel(row.quarter_start) })),
-                  "quarter_start", "total_cost", "brand_name",
-                )}
-              />
+              !pageData?.annualCostPerBrandOverTime
+                ? <ChartSkeleton />
+                : <ChartTile
+                    title="Annual Cost Over Time per Drug"
+                    figure={multiLineFigure(
+                      toRecs(pageData?.annualCostPerBrandOverTime).map((row) => ({ ...row, quarter_start: yearLabel(row.quarter_start) })),
+                      "quarter_start", "total_cost", "brand_name",
+                    )}
+                  />
             ) : null}
             {subtab === "class" ? (
-              <ChartTile title="Avg Latest Annual Cost by Drug Class" figure={barFigure(toRecs(pageData?.annualCostByDrugClass), "drug_class", "avg_cost", true)} />
+              !pageData?.annualCostByDrugClass
+                ? <ChartSkeleton />
+                : <ChartTile title="Avg Latest Annual Cost by Drug Class" figure={barFigure(toRecs(pageData?.annualCostByDrugClass), "drug_class", "avg_cost", true)} />
             ) : null}
             {subtab === "wac" ? (
-              <ChartTile
-                title="WAC Unit Price History"
-                figure={multiLineFigure(
-                  toRecs(pageData?.wacPriceHistory).map((row) => ({ ...row, wac_unit_effective_date: yearLabel(row.wac_unit_effective_date) })),
-                  "wac_unit_effective_date", "wac_unit_price", "brand_name",
-                )}
-              />
+              !pageData?.wacPriceHistory
+                ? <ChartSkeleton />
+                : <ChartTile
+                    title="WAC Unit Price History"
+                    figure={multiLineFigure(
+                      toRecs(pageData?.wacPriceHistory).map((row) => ({ ...row, wac_unit_effective_date: yearLabel(row.wac_unit_effective_date) })),
+                      "wac_unit_effective_date", "wac_unit_price", "brand_name",
+                    )}
+                  />
             ) : null}
-            {subtab === "raw" ? <AgGridTable rows={toRecs(pageData?.rawPricing)} /> : null}
+            {subtab === "raw" ? (
+              !(fullyLoaded ?? false)
+                ? <TableSkeleton rows={8} />
+                : <AgGridTable rows={toRecs(pageData?.rawPricing)} />
+            ) : null}
             <AiSummaryBlock pageKey="drug-pricing" summary={pageSummaries["drug-pricing"]} loading={summaryLoading} onGenerate={() => requestSummary("drug-pricing")} />
           </>
         )}
