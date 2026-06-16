@@ -55,6 +55,11 @@ export function useProgressivePageData(params: {
   useEffect(() => {
     if (!authenticated) return;
 
+    // Reset any stale loading state from a previous page's aborted fetch.
+    // Without this, switching away from a loading non-streaming page leaves
+    // pageLoading=true (the .finally guard skips the reset on abort).
+    setPageLoading(false);
+
     const isMarketAccess = pageKey === "market-access";
     const extra = isMarketAccess ? { year: marketAccessYear } : undefined;
     const streamPath = STREAM_PATH_MAP[pageKey];
