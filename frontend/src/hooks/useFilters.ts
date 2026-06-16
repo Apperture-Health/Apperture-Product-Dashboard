@@ -24,7 +24,13 @@ export function useFilters(session: AuthSession | null) {
   function updateFilter<K extends keyof FilterState>(key: K, value: FilterState[K]) {
     setFilters((previous) => {
       const next = { ...previous, [key]: value };
-      if (key === "indication_name" || key === "atc_class_name") {
+      // Only cascade-clear downstream filters when a global filter actually changes value.
+      // Without this guard, selecting a drug class after AI-applied filters would wipe
+      // phase/status/etc even though the indication hasn't changed.
+      const globalChanged =
+        (key === "indication_name" && value !== previous.indication_name) ||
+        (key === "atc_class_name" && value !== previous.atc_class_name);
+      if (globalChanged) {
         return {
           ...next,
           sponsor: [],
