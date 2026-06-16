@@ -1,10 +1,43 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { AuthSession, FilterOptions, FilterState } from "@/lib/types";
 import { hasAnyFilter, activeFilterSummary, getInitials } from "@/lib/transforms";
 import { MultiCheckboxDropdown } from "@/components/ui/MultiCheckboxDropdown";
 import { SidebarSelectField } from "@/components/ui/SidebarSelectField";
+import { apiRequest } from "@/lib/api";
+
+const CHIP_COLORS: Record<string, string> = {
+  "Condition":    "#0F4C81",
+  "Drug Class":   "#1D3557",
+  "Sponsor":      "#2E86AB",
+  "Phase":        "#2A9D8F",
+  "Status":       "#F18F01",
+  "Country":      "#E76F51",
+  "Agency Class": "#457B9D",
+  "Has Results":  "#6B7280",
+};
+
+const EXAMPLES = [
+  "Phase 2 trials for NSCLC by AstraZeneca",
+  "Completed breast cancer trials with posted results",
+  "Recruiting AML trials from major pharma",
+  "Merck's Phase 3 oncology pipeline",
+];
+
+function buildChips(extracted: Record<string, unknown>): Array<{ label: string; value: string }> {
+  const chips: Array<{ label: string; value: string }> = [];
+  if (typeof extracted.indication === "string") chips.push({ label: "Condition", value: extracted.indication });
+  if (typeof extracted.atc_class === "string") chips.push({ label: "Drug Class", value: extracted.atc_class });
+  if (Array.isArray(extracted.sponsors)) extracted.sponsors.forEach((v) => chips.push({ label: "Sponsor", value: String(v) }));
+  if (Array.isArray(extracted.phases)) extracted.phases.forEach((v) => chips.push({ label: "Phase", value: String(v) }));
+  if (Array.isArray(extracted.statuses)) extracted.statuses.forEach((v) => chips.push({ label: "Status", value: String(v) }));
+  if (Array.isArray(extracted.countries)) extracted.countries.forEach((v) => chips.push({ label: "Country", value: String(v) }));
+  if (Array.isArray(extracted.agency_class)) extracted.agency_class.forEach((v) => chips.push({ label: "Agency Class", value: String(v) }));
+  if (typeof extracted.has_results === "boolean") chips.push({ label: "Has Results", value: extracted.has_results ? "Yes" : "No" });
+  return chips;
+}
 
 type SidebarProps = {
   session: AuthSession;
@@ -14,6 +47,7 @@ type SidebarProps = {
   updateFilter: <K extends keyof FilterState>(key: K, value: FilterState[K]) => void;
   resetFilters: () => void;
   onLogout: () => void;
+  onApplyFilters: (extracted: Record<string, unknown>) => void;
 };
 
 export function Sidebar({
@@ -24,10 +58,39 @@ export function Sidebar({
   updateFilter,
   resetFilters,
   onLogout,
+  onApplyFilters,
 }: SidebarProps) {
   const indicationOptions = session.allowed_indications ?? filterOptions.indications;
   const atcClassOptions = session.allowed_atc_classes ?? filterOptions.atc_classes;
   const activeFilters = activeFilterSummary(filters);
+
+  const [question, setQuestion] = useState("");
+  const [extracted, setExtracted] = useState<Record<string, unknown> | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  async function runExtract(q: string) {
+    if (!q.trim()) return;
+    setAiLoading(true);
+    setExtracted(null);
+    try {
+      const result = await apiRequest<{ extracted: Record<string, unknown> }>("/api/ai/extract-filters", {
+        method: "POST",
+        body: JSON.stringify({ question: q }),
+      });
+      setExtracted(result.extracted);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  function handleApply() {
+    if (!extracted) return;
+    onApplyFilters(extracted);
+    setExtracted(null);
+    setQuestion("");
+  }
+
+  const chips = extracted ? buildChips(extracted) : [];
 
   return (
     <aside className="dashboard-sidebar">
@@ -45,6 +108,75 @@ export function Sidebar({
         <button className="user-signout-btn" onClick={onLogout} title="Sign out">⏻</button>
       </div>
 
+      {/* ── Ask the Data ─────────────────────────────────────────────── */}
+      <div className="ask-sidebar-section">
+        <div className="ask-sidebar-label">💬 Ask the Data</div>
+        <input
+          className="ask-sidebar-input"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && runExtract(question)}
+          placeholder="e.g. Phase 2 NSCLC by AstraZeneca"
+          disabled={aiLoading}
+        />
+        <button
+          className="ask-sidebar-btn"
+          onClick={() => runExtract(question)}
+          disabled={!question.trim() || aiLoading}
+        >
+          {aiLoading ? "Extracting…" : "Ask ▶"}
+        </button>
+
+        {!extracted && !aiLoading && (
+          <div className="ask-sidebar-examples">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex}
+                className="ask-sidebar-example"
+                onClick={() => { setQuestion(ex); runExtract(ex); }}
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {extracted && (
+          <div className="ask-sidebar-result">
+            {typeof extracted.interpretation === "string" && (
+              <div className="ask-sidebar-interpretation">
+                <span className="ask-sidebar-interpreted-label">🎯 Interpreted as</span>
+                {extracted.interpretation}
+              </div>
+            )}
+            {chips.length > 0 ? (
+              <div className="ask-sidebar-chips">
+                {chips.map(({ label, value }) => (
+                  <span
+                    key={`${label}-${value}`}
+                    className="ask-sidebar-chip"
+                    style={{ background: CHIP_COLORS[label] ?? "#6B7280" }}
+                  >
+                    {label}: {value}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="ask-sidebar-no-match">No filters could be extracted. Try rephrasing.</div>
+            )}
+            <div className="ask-sidebar-actions">
+              <button className="ask-sidebar-apply" onClick={handleApply} disabled={chips.length === 0}>
+                ✅ Apply
+              </button>
+              <button className="ask-sidebar-dismiss" onClick={() => { setExtracted(null); setQuestion(""); }}>
+                ✕ Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Filters ──────────────────────────────────────────────────── */}
       <div className="sidebar-filter-header">
         <span className="sidebar-filter-label">Filters</span>
         {hasAnyFilter(filters) ? <span className="sidebar-filter-count">{Object.keys(activeFilters).length}</span> : null}

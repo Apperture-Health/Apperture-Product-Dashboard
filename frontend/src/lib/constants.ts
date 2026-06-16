@@ -2,7 +2,6 @@ import { FilterOptions, FilterState, PageMeta } from "@/lib/types";
 
 export const PAGE_META: PageMeta[] = [
   { key: "home", label: "🏠 Home", title: "Clinical Trials Intelligence Platform" },
-  { key: "ask-the-data", label: "💬 Ask the Data", title: "AI Query" },
   { key: "pipeline", label: "📈 Pipeline", title: "Pipeline Landscape" },
   { key: "drug-detail", label: "💊 Drug Detail", title: "Drug Detail" },
   { key: "drug-pricing", label: "💰 Drug Pricing", title: "Drug Pricing" },

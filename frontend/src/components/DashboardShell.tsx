@@ -30,7 +30,6 @@ import { OutcomesPage } from "@/components/pages/OutcomesPage";
 import { ProOverviewPage } from "@/components/pages/ProOverviewPage";
 import { TrialGroupsPage } from "@/components/pages/TrialGroupsPage";
 import { SafetyPage } from "@/components/pages/SafetyPage";
-import { AskTheDataPage } from "@/components/pages/AskTheDataPage";
 import { ScoresPage } from "@/components/pages/ScoresPage";
 import { RealWorldSafetyPage } from "@/components/pages/RealWorldSafetyPage";
 
@@ -119,6 +118,7 @@ export function DashboardShell() {
         updateFilter={updateFilter}
         resetFilters={resetFilters}
         onLogout={handleLogout}
+        onApplyFilters={handleApplyExtracted}
       />
 
       <main className="dashboard-main">
@@ -183,10 +183,6 @@ export function DashboardShell() {
             marketAccessYear={marketAccessYear}
             setMarketAccessYear={setMarketAccessYear}
           />
-        ) : null}
-
-        {!pageLoading && currentPage.key === "ask-the-data" ? (
-          <AskTheDataPage {...pageProps} onApplyFilters={handleApplyExtracted} />
         ) : null}
 
         {!pageLoading && currentPage.key === "scores" ? (
@@ -564,6 +560,52 @@ export function DashboardShell() {
         .skeleton-metric { min-height: 126px; }
         .skeleton-chart { min-height: 340px; }
         .sidebar-loading { margin-top: 12px; font-size: 12px; color: #cbd5e1; }
+        .ask-sidebar-section { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+        .ask-sidebar-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 8px; }
+        .ask-sidebar-input {
+          width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3);
+          background: rgba(255,255,255,0.96); color: #1a1a2e; padding: 9px 11px;
+          font-size: 13px; outline: none; margin-bottom: 8px; box-sizing: border-box;
+        }
+        .ask-sidebar-input:focus { border-color: #8dc7dd; box-shadow: 0 0 0 3px rgba(141,199,221,0.24); }
+        .ask-sidebar-btn {
+          width: 100%; padding: 9px 12px; border-radius: 8px; border: none;
+          background: #0f4c81; color: white; font-size: 13px; font-weight: 600;
+          cursor: pointer; transition: background 0.2s;
+        }
+        .ask-sidebar-btn:hover:not(:disabled) { background: #0a3a61; }
+        .ask-sidebar-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .ask-sidebar-examples { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+        .ask-sidebar-example {
+          text-align: left; background: transparent; border: 1px solid rgba(255,255,255,0.14);
+          color: rgba(255,255,255,0.6); border-radius: 7px; padding: 7px 10px;
+          font-size: 11px; cursor: pointer; transition: background 0.15s, color 0.15s;
+        }
+        .ask-sidebar-example:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
+        .ask-sidebar-result { margin-top: 8px; }
+        .ask-sidebar-interpretation {
+          background: white; border-radius: 8px; padding: 9px 11px; margin-bottom: 8px;
+          font-size: 12px; font-weight: 600; color: #0f4c81; line-height: 1.4;
+        }
+        .ask-sidebar-interpreted-label { display: block; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+        .ask-sidebar-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+        .ask-sidebar-chip { color: white; padding: 4px 9px; border-radius: 14px; font-size: 11px; font-weight: 500; }
+        .ask-sidebar-no-match { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+        .ask-sidebar-actions { display: flex; gap: 6px; }
+        .ask-sidebar-apply {
+          flex: 1; padding: 8px 10px; border-radius: 7px; border: none;
+          background: #0f4c81; color: white; font-size: 12px; font-weight: 600;
+          cursor: pointer; transition: background 0.2s;
+        }
+        .ask-sidebar-apply:hover:not(:disabled) { background: #0a3a61; }
+        .ask-sidebar-apply:disabled { opacity: 0.45; cursor: not-allowed; }
+        .ask-sidebar-dismiss {
+          flex: 1; padding: 8px 10px; border-radius: 7px;
+          border: 1px solid rgba(255,255,255,0.2); background: transparent;
+          color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 500; cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+        }
+        .ask-sidebar-dismiss:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
         .ag-theme-alpine {
           --ag-font-family: "DM Sans", system-ui, sans-serif;
           --ag-border-color: #e5e7eb;
