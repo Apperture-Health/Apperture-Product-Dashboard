@@ -33,7 +33,13 @@ async function proxy(req: NextRequest, path: string[]) {
   const res = await fetch(target, { method: req.method, headers, body });
 
   const resHeaders = new Headers();
-  res.headers.forEach((value, key) => resHeaders.set(key, value));
+  res.headers.forEach((value, key) => {
+    if (key.toLowerCase() === "set-cookie") {
+      resHeaders.append(key, value);
+    } else {
+      resHeaders.set(key, value);
+    }
+  });
 
   return new Response(res.body, { status: res.status, headers: resHeaders });
 }
