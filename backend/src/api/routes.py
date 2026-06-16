@@ -113,14 +113,21 @@ def _catalog_path(filename: str) -> Path:
     return candidates[0]
 
 
+def _user_access_from_session(session: dict) -> tuple[list[str] | None, list[str] | None]:
+    """Recompute allowed_indications/atc_classes from username — never read them
+    from the cookie, because large lists push the cookie over the 4 KB browser limit."""
+    username = session.get("username")
+    access = get_user_access(username) if username else {}
+    return build_allowed_indications(access), build_allowed_atc_classes(access)
+
+
 def _filter_state(dto: FilterStateDTO, request: Request | None = None) -> FilterState:
     allowed_indications = dto.allowed_indications
     allowed_atc_classes = dto.allowed_atc_classes
     if request is not None:
         session = request.session.get("auth")
         if session:
-            allowed_indications = session.get("allowed_indications")
-            allowed_atc_classes = session.get("allowed_atc_classes")
+            allowed_indications, allowed_atc_classes = _user_access_from_session(session)
     return FilterState(
         indication_name=dto.indication_name,
         atc_class_name=dto.atc_class_name,
@@ -183,7 +190,14 @@ def login(payload: AuthLoginRequest, request: Request) -> AuthSessionDTO:
     if not ok:
         raise HTTPException(status_code=401, detail="Invalid username or password")
     session = _session_payload(payload.username)
-    request.session["auth"] = session.model_dump()
+    # Store only small fields in the cookie — allowed_indications can be 100+ strings
+    # which pushes the cookie over the 4 KB browser limit and causes silent auth failures.
+    request.session["auth"] = {
+        "authenticated": session.authenticated,
+        "username": session.username,
+        "display_name": session.display_name,
+        "visible_tabs": session.visible_tabs,
+    }
     return session
 
 
@@ -198,7 +212,12 @@ def me(request: Request) -> AuthSessionDTO:
     auth = request.session.get("auth")
     if not auth:
         return AuthSessionDTO(authenticated=False)
-    return AuthSessionDTO(**auth)
+    allowed_indications, allowed_atc_classes = _user_access_from_session(auth)
+    return AuthSessionDTO(
+        **auth,
+        allowed_indications=allowed_indications,
+        allowed_atc_classes=allowed_atc_classes,
+    )
 
 
 @api_router.get("/api/meta/pages")
@@ -218,6 +237,7 @@ def filter_options(
     atc_class_name: str | None = Query(default=None),
 ) -> FiltersOptionsDTO:
     auth = _require_auth(request)
+    allowed_indications, allowed_atc_classes = _user_access_from_session(auth)
     static_options = _static_sidebar_options()
     if indication_name or atc_class_name:
         options = get_filter_options(indication_name, atc_class_name)
@@ -225,11 +245,11 @@ def filter_options(
         options = static_options.copy()
     options["indications"] = _apply_allowed_options(
         static_options["indications"],
-        auth.get("allowed_indications"),
+        allowed_indications,
     )
     options["atc_classes"] = _apply_allowed_options(
         static_options["atc_classes"],
-        auth.get("allowed_atc_classes"),
+        allowed_atc_classes,
     )
     return FiltersOptionsDTO(**options)
 
