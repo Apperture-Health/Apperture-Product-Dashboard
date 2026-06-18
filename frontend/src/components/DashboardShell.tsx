@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFilters } from "@/hooks/useFilters";
 import { useProgressivePageData } from "@/hooks/useProgressivePageData";
 import { activeFilterSummary, slugToMeta } from "@/lib/transforms";
-import { PAGE_META } from "@/lib/constants";
+import { PAGE_META, PAGE_GROUPS } from "@/lib/constants";
 import { AuthSession } from "@/lib/types";
 
 import { LoginPage } from "@/components/LoginPage";
@@ -16,7 +16,7 @@ import { AlertCallout } from "@/components/ui/AlertCallout";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { TopTabs } from "@/components/ui/TopTabs";
+import { TwoTierNav } from "@/components/ui/TopTabs";
 
 import { HomePage } from "@/components/pages/HomePage";
 import { PipelinePage } from "@/components/pages/PipelinePage";
@@ -107,6 +107,9 @@ export function DashboardShell() {
   };
 
   const visiblePages = PAGE_META.filter((page) => visibleLabels.includes(page.label));
+  const visibleGroups = PAGE_GROUPS.filter((g) =>
+    g.tabKeys.some((k) => visiblePages.some((p) => p.key === k))
+  );
 
   return (
     <div className="dashboard-shell">
@@ -122,7 +125,12 @@ export function DashboardShell() {
       />
 
       <main className="dashboard-main">
-        <TopTabs pages={visiblePages} activeKey={currentPage.key} onChange={updateQueryTab} />
+        <TwoTierNav
+          groups={visibleGroups}
+          visiblePages={visiblePages}
+          activeKey={currentPage.key}
+          onChange={updateQueryTab}
+        />
         <PageHeader page={currentPage} />
         <FilterSummaryBar active={activeFilterSummary(filters)} />
         {kpisReady && !fullyLoaded ? <ProgressBar /> : null}
@@ -452,8 +460,63 @@ export function DashboardShell() {
           white-space: nowrap;
           line-height: 1.1;
         }
-        .top-tabs { padding: 4px; border-radius: 14px; }
-        .top-tab-button { font-size: 13px; min-height: 36px; }
+        .nav-wrapper { margin-bottom: 14px; }
+        .nav-group-tier {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 6px;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 4px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .nav-group-tier.has-subtabs { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom-color: #d1dce8; }
+        .nav-group-tier::-webkit-scrollbar { display: none; }
+        .nav-group-btn {
+          flex: 0 0 auto;
+          padding: 8px 14px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #374151;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-group-btn:hover { background: rgba(15, 76, 129, 0.08); }
+        .nav-group-btn.active { background: #0f4c81; color: white; box-shadow: inset 0 -1px 0 rgba(255,255,255,0.12); }
+        .nav-page-tier {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 4px;
+          background: #eef4fb;
+          border: 1px solid #e5e7eb;
+          border-top: none;
+          border-radius: 0 0 12px 12px;
+          padding: 6px 8px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .nav-page-tier::-webkit-scrollbar { display: none; }
+        .nav-page-btn {
+          flex: 0 0 auto;
+          padding: 5px 12px;
+          border-radius: 6px;
+          font-size: 12.5px;
+          font-weight: 500;
+          color: #6b7280;
+          border: 1px solid transparent;
+          background: transparent;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.15s;
+        }
+        .nav-page-btn:hover { background: white; color: #0f4c81; border-color: #d5e3ee; }
+        .nav-page-btn.active { background: white; color: #0f4c81; border-color: #c5d8f0; font-weight: 600; box-shadow: 0 1px 3px rgba(15,76,129,0.08); }
         .section-tabs { width: fit-content; max-width: 100%; margin-bottom: 10px; }
         .section-tab-button { font-size: 12px; padding: 7px 11px; min-height: 32px; }
         .tab-button:hover { background: rgba(15, 76, 129, 0.08); }
@@ -575,7 +638,19 @@ export function DashboardShell() {
         }
         .ask-sidebar-btn:hover:not(:disabled) { background: #0a3a61; }
         .ask-sidebar-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-        .ask-sidebar-examples { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+        .ask-sidebar-examples-details { margin-top: 8px; border: 1px solid rgba(255,255,255,0.14); border-radius: 7px; overflow: hidden; }
+        .ask-sidebar-examples-summary {
+          list-style: none; cursor: pointer; padding: 7px 10px;
+          font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55);
+          background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between;
+          transition: background 0.15s, color 0.15s;
+        }
+        .ask-sidebar-examples-summary:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+        .ask-sidebar-examples-summary::marker { display: none; }
+        .ask-sidebar-examples-summary::after { content: '›'; font-size: 14px; font-weight: 300; color: rgba(255,255,255,0.35); transition: transform 0.2s; }
+        .ask-sidebar-examples-details[open] .ask-sidebar-examples-summary::after { transform: rotate(90deg); }
+        .ask-sidebar-examples-details[open] .ask-sidebar-examples-summary { border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .ask-sidebar-examples { display: flex; flex-direction: column; gap: 5px; padding: 8px; }
         .ask-sidebar-example {
           text-align: left; background: transparent; border: 1px solid rgba(255,255,255,0.14);
           color: rgba(255,255,255,0.6); border-radius: 7px; padding: 7px 10px;

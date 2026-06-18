@@ -17,6 +17,21 @@ export const PAGE_META: PageMeta[] = [
   { key: "real-world-safety", label: "🌐 Real World Safety", title: "FAERS Post-Market Safety" },
 ];
 
+export const HOME_KEY = "home";
+
+export type PageGroup = {
+  key: string;
+  label: string;
+  tabKeys: string[];
+};
+
+export const PAGE_GROUPS: PageGroup[] = [
+  { key: "market",   label: "📊 Market Intelligence", tabKeys: ["pipeline", "drug-detail", "drug-pricing", "market-access", "sponsors"] },
+  { key: "design",   label: "🔬 Trial Design",        tabKeys: ["trial-design", "trial-groups"] },
+  { key: "evidence", label: "📈 Clinical Evidence",   tabKeys: ["endpoints", "outcomes", "scores", "pro-overview"] },
+  { key: "safety",   label: "🛡️ Safety",              tabKeys: ["safety", "real-world-safety"] },
+];
+
 export const PAGE_SUBTITLES: Record<string, string> = {
   home: "Competitive landscape, pipeline intelligence, endpoint benchmarking, PRO analytics, and safety analysis.",
   pipeline: "Investigational asset landscape: sponsor activity, indication coverage, and pipeline PRO usage.",

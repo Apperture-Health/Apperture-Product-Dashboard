@@ -312,7 +312,7 @@ def _extract_filters(question: str) -> dict:
         raise HTTPException(status_code=500, detail="OpenAI API key not configured")
 
     catalog, static = _load_ai_catalogs()
-    conditions = [v.strip() for v in catalog.get("condition_values", "").split("|") if v.strip()]
+    conditions = get_unique_display_labels() or [v.strip() for v in catalog.get("condition_values", "").split("|") if v.strip()]
     sponsors = [v.strip() for v in catalog.get("sponsor_values", "").split("|") if v.strip()]
     drug_classes = [v.strip() for v in catalog.get("drug_class_values", "").split("|") if v.strip()]
 
@@ -320,7 +320,11 @@ def _extract_filters(question: str) -> dict:
         "You are a filter extraction agent for a clinical trials analytics platform. "
         "Return a JSON object with keys indication, atc_class, sponsors, phases, statuses, "
         "countries, agency_class, has_results, interpretation. "
-        "Match values exactly from the provided lists.\n\n"
+        "Match values exactly from the provided lists. "
+        "Set a key to null (or [] for array fields) ONLY when the user explicitly did not mention "
+        "that filter — do not infer filters from context. "
+        "For example, if the user mentions a disease area but no drug class, set atc_class to null. "
+        "If the user mentions no sponsors, set sponsors to [].\n\n"
         f"Conditions: {' | '.join(conditions)}\n\n"
         f"Sponsors: {' | '.join(sponsors)}\n\n"
         f"Drug Classes: {' | '.join(drug_classes)}\n\n"

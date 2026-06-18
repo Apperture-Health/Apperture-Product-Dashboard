@@ -128,17 +128,20 @@ export function Sidebar({
         </button>
 
         {!extracted && !aiLoading && (
-          <div className="ask-sidebar-examples">
-            {EXAMPLES.map((ex) => (
-              <button
-                key={ex}
-                className="ask-sidebar-example"
-                onClick={() => { setQuestion(ex); runExtract(ex); }}
-              >
-                {ex}
-              </button>
-            ))}
-          </div>
+          <details className="ask-sidebar-examples-details">
+            <summary className="ask-sidebar-examples-summary">Try an example</summary>
+            <div className="ask-sidebar-examples">
+              {EXAMPLES.map((ex) => (
+                <button
+                  key={ex}
+                  className="ask-sidebar-example"
+                  onClick={() => { setQuestion(ex); runExtract(ex); }}
+                >
+                  {ex}
+                </button>
+              ))}
+            </div>
+          </details>
         )}
 
         {extracted && (

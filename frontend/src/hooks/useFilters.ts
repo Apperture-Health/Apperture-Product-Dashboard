@@ -65,17 +65,34 @@ export function useFilters(session: AuthSession | null) {
   }
 
   function applyExtracted(extracted: Record<string, unknown>) {
-    setFilters((previous) => ({
-      ...previous,
-      indication_name: typeof extracted.indication === "string" ? extracted.indication : null,
-      atc_class_name: typeof extracted.atc_class === "string" ? extracted.atc_class : null,
-      sponsor: Array.isArray(extracted.sponsors) ? (extracted.sponsors as string[]) : [],
-      phase: Array.isArray(extracted.phases) ? (extracted.phases as string[]) : [],
-      overall_status: Array.isArray(extracted.statuses) ? (extracted.statuses as string[]) : [],
-      country: Array.isArray(extracted.countries) ? (extracted.countries as string[]) : [],
-      sponsor_agency_class: Array.isArray(extracted.agency_class) ? (extracted.agency_class as string[]) : [],
-      has_results: typeof extracted.has_results === "boolean" ? extracted.has_results : null,
-    }));
+    setFilters((previous) => {
+      const rawIndication = typeof extracted.indication === "string" ? extracted.indication : null;
+      // Only apply if the value exists in the dropdown's option list. An unrecognised value
+      // leaves the <select> in an invalid state and can fire a spurious onChange on the next
+      // re-render, which cascades through updateFilter and wipes phase/status/etc.
+      const indication =
+        rawIndication && filterOptions.indications.includes(rawIndication)
+          ? rawIndication
+          : previous.indication_name;
+
+      const rawAtcClass = typeof extracted.atc_class === "string" ? extracted.atc_class : null;
+      const atcClass =
+        rawAtcClass && filterOptions.atc_classes.includes(rawAtcClass)
+          ? rawAtcClass
+          : previous.atc_class_name;
+
+      return {
+        ...previous,
+        indication_name: indication,
+        atc_class_name: atcClass,
+        sponsor: Array.isArray(extracted.sponsors) ? (extracted.sponsors as string[]) : [],
+        phase: Array.isArray(extracted.phases) ? (extracted.phases as string[]) : [],
+        overall_status: Array.isArray(extracted.statuses) ? (extracted.statuses as string[]) : [],
+        country: Array.isArray(extracted.countries) ? (extracted.countries as string[]) : [],
+        sponsor_agency_class: Array.isArray(extracted.agency_class) ? (extracted.agency_class as string[]) : [],
+        has_results: typeof extracted.has_results === "boolean" ? extracted.has_results : null,
+      };
+    });
   }
 
   return { filters, filterOptions, filtersLoading, updateFilter, resetFilters, applyExtracted };

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { apiRequest, pagePayload, streamRequest } from "@/lib/api";
 import { FilterState } from "@/lib/types";
-import { makeCacheKey } from "@/lib/transforms";
+import { hasAnyFilter, makeCacheKey } from "@/lib/transforms";
 import { PAGE_ENDPOINT_MAP, PAGE_DATA_CACHE_MAX } from "@/lib/constants";
 
 // Pages that have a KPI block and support per-chart streaming
@@ -96,6 +96,14 @@ export function useProgressivePageData(params: {
 
     // Non-progressive pages: existing behaviour — single request, loading spinner
     if (!streamPath) {
+      if (!hasAnyFilter(filters)) {
+        // No filter set — skip the API call. The page component will render its
+        // own "Filter Required" state immediately via its hasAnyFilter guard.
+        setPartialData(null);
+        setKpisReady(true);
+        setFullyLoaded(true);
+        return;
+      }
       setPageLoading(true);
       apiRequest<Record<string, unknown>>(config.path, {
         method: "POST",
