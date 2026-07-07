@@ -1318,13 +1318,13 @@ def get_design_outcome_type_category_heatmap(filters: FilterState) -> pd.DataFra
     ec_where = f"AND {ec_clause}" if ec_clause else ""
     sql = f"""
         SELECT
-            COALESCE(do_.outcome_type, 'other') AS outcome_type,
-            dc.outcome_category,
-            COUNT(DISTINCT do_.nct_id)          AS trial_count
+            COALESCE(do_.outcome_type, 'other')     AS outcome_type,
+            dc.design_outcome_category              AS outcome_category,
+            COUNT(DISTINCT do_.nct_id)              AS trial_count
         FROM ctgov.design_outcomes do_
         JOIN public.drug_trial_design_outcome_categories dc ON dc.nct_id = do_.nct_id
         JOIN ctgov.studies s ON s.nct_id = do_.nct_id
-        WHERE dc.outcome_category IS NOT NULL {scope_where} {ec_where}
+        WHERE dc.design_outcome_category IS NOT NULL {scope_where} {ec_where}
         GROUP BY 1, 2
     """
     df = query_aact(sql, params)
@@ -1367,11 +1367,11 @@ def get_top_design_endpoints(filters: FilterState, limit: int = 25) -> pd.DataFr
     ec_where = f"AND {ec_clause}" if ec_clause else ""
     sql = f"""
         SELECT
-            dc.outcome_category,
+            dc.design_outcome_category AS outcome_category,
             COUNT(DISTINCT dc.nct_id) AS trial_count
         FROM public.drug_trial_design_outcome_categories dc
         JOIN ctgov.studies s ON s.nct_id = dc.nct_id
-        WHERE dc.outcome_category IS NOT NULL {scope_where} {ec_where}
+        WHERE dc.design_outcome_category IS NOT NULL {scope_where} {ec_where}
         GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
     """
     return query_aact(sql, params)
