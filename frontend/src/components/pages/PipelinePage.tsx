@@ -6,7 +6,6 @@ import { barFigure, donutFigure, heatmapFigure, treemapFigure } from "@/lib/char
 import { hasAnyFilter, makeCacheKey } from "@/lib/transforms";
 import { AgGridTable } from "@/components/ui/AgGridTable";
 import { AiSummaryBlock } from "@/components/ui/AiSummaryBlock";
-import { AlertCallout } from "@/components/ui/AlertCallout";
 import { ChartSkeleton } from "@/components/ui/ChartSkeleton";
 import { ChartTile } from "@/components/ui/ChartTile";
 import { CsvButton } from "@/components/ui/CsvButton";
@@ -83,10 +82,6 @@ export function PipelinePage({ filters, pageData, pageSummaries, summaryLoading,
 
   return (
     <div className="page-stack">
-      <AlertCallout tone="info" title="Pipeline Data Note">
-        Pipeline data is sourced from <code>pipeline_trials</code> and reflects investigational assets.
-      </AlertCallout>
-
       {/* Inline pipeline class filter */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
         <span style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>Pipeline Class:</span>
