@@ -47,7 +47,12 @@ export function ProOverviewPage({ filters, pageData, pageSummaries, summaryLoadi
                 <ChartTile title="Instrument Share (Top 10)" figure={donutFigure(topProRows(toRecs(pageData?.proUsageRaw)).slice(0, 10), "instrument_name", "total")} />
               </TwoCol>
             ) : null}
-            {subtab === "funnel" ? <ChartTile title="Planned → Reported PRO Funnel" figure={funnelFigure(toRecs(pageData?.reportedProFunnel), "stage", "trial_count")} /> : null}
+            {subtab === "funnel" ? (() => {
+              const funnelRows = toRecs(pageData?.reportedProFunnel);
+              return funnelRows.some((row) => Number(row.trial_count ?? 0) > 0)
+                ? <ChartTile title="Planned → Reported PRO Funnel" figure={funnelFigure(funnelRows, "stage", "trial_count")} />
+                : <p style={{ color: "#6B7280", fontSize: 14 }}>No PRO endpoint data for the current filter scope.</p>;
+            })() : null}
             {subtab === "sponsor" ? <ChartTile title="PRO Adoption by Sponsor" figure={barFigure(sponsorTotals(toRecs(pageData?.proBySponsor)), "sponsor", "trial_count", true)} /> : null}
             {subtab === "phase" ? <ChartTile title="Trials with Planned PROs by Phase" figure={barFigure(toRecs(pageData?.proByPhase), "phase", "pro_trials")} /> : null}
             <AgGridTable rows={topProRows(toRecs(pageData?.proUsageRaw))} />

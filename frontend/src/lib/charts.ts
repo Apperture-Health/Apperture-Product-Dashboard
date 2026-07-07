@@ -64,6 +64,22 @@ export const baseLayout: Partial<Layout> = {
   },
 };
 
+// Plotly mutates the layout object it is handed in place (writing back computed
+// `range`, `autorange`, `type`, internal `_categories`, etc.). `baseLayout` is a
+// module-level singleton with shared nested `xaxis`/`yaxis` objects, so returning
+// it (or a shallow `{ ...baseLayout }`) by reference lets one chart's render
+// corrupt the axes of every other chart — most visibly the categorical funnel,
+// which then renders blank. Always build layouts through this helper so each
+// figure gets its own isolated top-level object AND fresh nested axis objects.
+export function freshLayout(overrides: Partial<Layout> = {}): Partial<Layout> {
+  return {
+    ...baseLayout,
+    ...overrides,
+    xaxis: { ...baseLayout.xaxis, ...overrides.xaxis },
+    yaxis: { ...baseLayout.yaxis, ...overrides.yaxis },
+  };
+}
+
 function clipped(values: Array<string | number>) {
   return values.map((value) => {
     const str = String(value);
@@ -83,7 +99,7 @@ function numeric(value: unknown) {
 }
 
 export function barFigure(rows: Record<string, unknown>[], xKey: string, yKey: string, horizontal = false) {
-  if (!rows.length) return { data: [], layout: baseLayout };
+  if (!rows.length) return { data: [], layout: freshLayout() };
 
   const orderedRows = horizontal
     ? [...rows].sort((a, b) => numeric(b[yKey]) - numeric(a[yKey]))
@@ -154,7 +170,7 @@ export function lineFigure(rows: Record<string, unknown>[], xKey: string, yKey: 
         marker: { color: colors.primary, size: 6 },
       },
     ],
-    layout: baseLayout,
+    layout: freshLayout(),
   };
 }
 
@@ -214,7 +230,7 @@ export function heatmapFigure(
 ): { data: Data[]; layout: Partial<Layout> } {
   // 1. Guard against empty data
   if (!rows || rows.length === 0) {
-    return { data: [], layout: baseLayout };
+    return { data: [], layout: freshLayout() };
   }
 
   // 2. Extract unique axes (keeping them raw for data matching)
@@ -344,9 +360,14 @@ export function funnelFigure(rows: Record<string, unknown>[], labelKey: string, 
         y: rows.map((row) => row[labelKey] as Datum),
         x: rows.map((row) => Number(row[valueKey] ?? 0)),
         marker: { color: colors.sequence },
+        textinfo: "value+percent",
       },
     ],
-    layout: baseLayout,
+    layout: freshLayout({
+      margin: { l: 120, r: 24, t: 14, b: 24 },
+      xaxis: { showline: false, showgrid: false },
+      yaxis: { showgrid: false, autorange: "reversed" },
+    }),
   };
 }
 
@@ -363,7 +384,7 @@ export function areaFigure(rows: Record<string, unknown>[], xKey: string, yKey: 
         line: { color: colors.primary, width: 2.5 },
       },
     ],
-    layout: baseLayout,
+    layout: freshLayout(),
   };
 }
 

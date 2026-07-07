@@ -51,7 +51,12 @@ export function OutcomesPage({ filters, pageData }: PageProps) {
                 <AgGridTable rows={toRecs(pageData?.reportedOutcomeCategories)} />
               </>
             ) : null}
-            {subtab === "pro" ? <ChartTile title="Planned vs Reported PRO Funnel" figure={funnelFigure(toRecs(pageData?.reportedProFunnel), "stage", "trial_count")} /> : null}
+            {subtab === "pro" ? (() => {
+              const funnelRows = toRecs(pageData?.reportedProFunnel);
+              return funnelRows.some((row) => Number(row.trial_count ?? 0) > 0)
+                ? <ChartTile title="Planned vs Reported PRO Funnel" figure={funnelFigure(funnelRows, "stage", "trial_count")} />
+                : <p style={{ color: "#6B7280", fontSize: 14 }}>No PRO endpoint data for the current filter scope.</p>;
+            })() : null}
           </>
         )}
     </div>

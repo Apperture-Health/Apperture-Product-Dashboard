@@ -39,7 +39,12 @@ export function EndpointsPage({ filters, pageData }: PageProps) {
             />
             {subtab === "types" ? <ChartTile title="Outcome Type × Category (Unique Trials)" figure={heatmapFigure(toRecs(pageData?.designOutcomeTypeCategoryHeatmap), "outcome_category", "outcome_type", "trial_count")} /> : null}
             {subtab === "top" ? <ChartTile title="Top 10 Planned Endpoint Categories by Frequency" figure={barFigure(toRecs(pageData?.topDesignEndpoints), "outcome_category", "trial_count", true)} /> : null}
-            {subtab === "pro" ? <ChartTile title="Planned vs Reported PRO Funnel" figure={funnelFigure(toRecs(pageData?.reportedProFunnel), "stage", "trial_count")} /> : null}
+            {subtab === "pro" ? (() => {
+              const funnelRows = toRecs(pageData?.reportedProFunnel);
+              return funnelRows.some((row) => Number(row.trial_count ?? 0) > 0)
+                ? <ChartTile title="Planned vs Reported PRO Funnel" figure={funnelFigure(funnelRows, "stage", "trial_count")} />
+                : <p style={{ color: "#6B7280", fontSize: 14 }}>No PRO endpoint data for the current filter scope.</p>;
+            })() : null}
             {subtab === "table" ? <AgGridTable rows={toRecs(pageData?.designOutcomesTable)} /> : null}
           </>
         )}
