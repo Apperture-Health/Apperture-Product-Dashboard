@@ -202,6 +202,22 @@ def generate() -> str:
 
 -- ── SCHEMA (run once) ────────────────────────────────────────────────────────
 
+-- Create the target table on a fresh database (idempotent — no-op if it exists).
+CREATE TABLE IF NOT EXISTS public.overview_kpis_snapshot (
+    scope_key           TEXT PRIMARY KEY,
+    total_trials        BIGINT,
+    active_trials       BIGINT,
+    completed_trials    BIGINT,
+    trials_with_results BIGINT,
+    median_enrollment   NUMERIC,
+    unique_sponsors     BIGINT,
+    unique_drugs        BIGINT,
+    unique_conditions   BIGINT,
+    trials_with_pros    BIGINT,
+    refreshed_at        TIMESTAMPTZ
+);
+
+-- Migrate an older table that predates scope_key (no-op on a freshly created one).
 ALTER TABLE public.overview_kpis_snapshot
     ADD COLUMN IF NOT EXISTS scope_key TEXT NOT NULL DEFAULT 'global';
 

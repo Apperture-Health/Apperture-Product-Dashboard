@@ -16,12 +16,16 @@ from __future__ import annotations
 from typing import List, Optional, Tuple
 from utils.runtime import runtime as st
 
-from utils.filters import FilterState, get_raw_conditions_for_display_label
+from utils.filters import (
+    FilterState,
+    get_raw_conditions_for_display_label,
+    get_mesh_terms_for_bucket,
+)
 from config.settings import (
-    DRUG_INDICATIONS_TABLE,
+    DRUG_INDICATIONS2_TABLE,
     DRUG_CLASSES_TABLE,
     DRUGS_BRAND_COL,
-    DRUGS_INDICATION_COL,
+    DRUGS_INDICATION_MESH_COL,
     DRUGS_ATC_COL,
     CONDITIONS_TABLE,
     CONDITIONS_NAME_COL,
@@ -97,27 +101,47 @@ def resolve_brand_names(atc_class: Optional[str]) -> List[str]:
 
 
 @st.cache_data(ttl=600, show_spinner=False)
-def resolve_brand_names_from_drug_indication(drug_indication: str) -> List[str]:
+def resolve_brands_from_bucket_mesh(bucket: str) -> List[str]:
     """
-    Query drugs_db to get brand_names for the downstream drug_indication filter
-    (Sponsor/Drug sidebar tab). Uses public.drug_indications.
+    Resolve brand_names for a disease bucket via its MeSH terms.
+
+    bucket → get_mesh_terms_for_bucket() (bucket_to_mesh_map.json)
+           → public.drug_indications2.indication_mesh → brand_name.
+
+    This is the single MeSH-based brand-resolution path, shared by the global
+    indication brand-narrowing and the downstream "Drug Indication" filter.
+    Returns [] when the bucket has no mapped MeSH terms or no matching brands.
     """
-    if not drug_indication:
+    if not bucket:
+        return []
+
+    mesh_terms = get_mesh_terms_for_bucket(bucket)
+    if not mesh_terms:
         return []
 
     from data.db import query_drugs  # local import to avoid circular
 
     sql = f"""
         SELECT DISTINCT {DRUGS_BRAND_COL} AS brand_name
-        FROM {DRUG_INDICATIONS_TABLE}
-        WHERE {DRUGS_INDICATION_COL} = :drug_indication
+        FROM {DRUG_INDICATIONS2_TABLE}
+        WHERE LOWER({DRUGS_INDICATION_MESH_COL}) = ANY(:mesh)
           AND {DRUGS_BRAND_COL} IS NOT NULL
         LIMIT 2000
     """
-    df = query_drugs(sql, {"drug_indication": drug_indication})
+    df = query_drugs(sql, {"mesh": [m.lower().strip() for m in mesh_terms]})
     if df.empty:
         return []
     return df["brand_name"].dropna().tolist()
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def resolve_brand_names_from_drug_indication(drug_indication: str) -> List[str]:
+    """
+    Downstream "Drug Indication" sidebar filter (Sponsor/Drug tab). The selected
+    value is a disease *bucket* label; resolve it to brand_names via MeSH terms
+    and public.drug_indications2 (same path as the global brand narrowing).
+    """
+    return resolve_brands_from_bucket_mesh(drug_indication)
 
 
 @st.cache_data(ttl=600, show_spinner=False)

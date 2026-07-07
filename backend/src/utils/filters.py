@@ -1,10 +1,12 @@
 """
-Framework-agnostic filter state + disease bucket mapping helpers.
+Framework-agnostic filter state + disease bucket catalog helpers.
+
+Bucket conditions and MeSH terms are sourced from the single unified catalog
+`catalogs/bucket_catalog.json`.
 """
 from __future__ import annotations
 
 import json
-from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -24,32 +26,46 @@ def _catalog_path(filename: str) -> Path:
     return candidates[0]
 
 
-# ── Disease bucket mapping ────────────────────────────────────────────────────
-# Maps raw ctgov.conditions.name values ↔ human-readable display labels.
-# Loaded once per process; lru_cache'd for the lifetime of the process.
+# ── Unified bucket catalog ────────────────────────────────────────────────────
+# Single bucket-keyed source of truth (catalogs/bucket_catalog.json):
+#   { "<bucket>": { "conditions": [raw ctgov.conditions.name, ...],
+#                   "mesh_terms": [drug_indications2.indication_mesh, ...] } }
+# All lookups below are derived from this one file so a bucket's conditions and
+# MeSH terms can never drift apart. Loaded once per process; lru_cache'd.
 
 @lru_cache(maxsize=1)
-def _load_disease_bucket_mapping() -> dict[str, str]:
-    """Return {raw_condition_name: display_label} from the catalog file."""
+def _load_bucket_catalog() -> dict[str, dict[str, list[str]]]:
+    """Return the raw {bucket: {"conditions": [...], "mesh_terms": [...]}} catalog."""
     try:
-        return json.loads(_catalog_path("disease_bucket_mapping.json").read_text(encoding="utf-8"))
+        return json.loads(_catalog_path("bucket_catalog.json").read_text(encoding="utf-8"))
     except Exception:
         return {}
 
 
+# ── Disease bucket mapping (derived from the unified catalog) ──────────────────
+
+@lru_cache(maxsize=1)
+def _load_disease_bucket_mapping() -> dict[str, str]:
+    """Return {raw_condition_name: display_label}, flattened from the catalog."""
+    result: dict[str, str] = {}
+    for bucket, entry in _load_bucket_catalog().items():
+        for raw in entry.get("conditions", []):
+            result[raw] = bucket
+    return result
+
+
 @lru_cache(maxsize=1)
 def _build_display_to_raw_map() -> dict[str, list[str]]:
-    """Return {display_label: [raw_condition_name, ...]} reverse mapping."""
-    mapping = _load_disease_bucket_mapping()
-    result: dict[str, list[str]] = defaultdict(list)  # type: ignore[assignment]
-    for raw, display in mapping.items():
-        result[display].append(raw)
-    return dict(result)
+    """Return {display_label: [raw_condition_name, ...]} from the catalog."""
+    return {
+        bucket: list(entry.get("conditions", []))
+        for bucket, entry in _load_bucket_catalog().items()
+    }
 
 
 def get_unique_display_labels() -> list[str]:
     """Sorted list of unique display labels for the Condition dropdown."""
-    return sorted(set(_load_disease_bucket_mapping().values()))
+    return sorted(_load_bucket_catalog().keys())
 
 
 def get_raw_conditions_for_display_label(display_label: str) -> list[str]:
@@ -66,6 +82,34 @@ def get_raw_conditions_for_display_label(display_label: str) -> list[str]:
 def get_display_label_for_raw_condition(raw_condition: str) -> str:
     """Map a single raw condition name to its display label (identity fallback)."""
     return _load_disease_bucket_mapping().get(raw_condition, raw_condition)
+
+
+# ── Bucket ↔ MeSH mapping (derived from the unified catalog) ───────────────────
+# Each disease bucket → the MeSH terms used in public.drug_indications2.indication_mesh.
+# Drives brand resolution.
+
+@lru_cache(maxsize=1)
+def _build_mesh_to_bucket_map() -> dict[str, str]:
+    """Return {mesh_term_lower: bucket_display_label} reverse mapping."""
+    result: dict[str, str] = {}
+    for bucket, entry in _load_bucket_catalog().items():
+        for mesh in entry.get("mesh_terms", []):
+            result[mesh.lower().strip()] = bucket
+    return result
+
+
+def get_mesh_terms_for_bucket(bucket: str) -> list[str]:
+    """Return the MeSH terms mapped to *bucket* (empty list if none/unknown)."""
+    if not bucket:
+        return []
+    return _load_bucket_catalog().get(bucket, {}).get("mesh_terms", [])
+
+
+def get_bucket_for_mesh_term(mesh_term: str) -> str | None:
+    """Map a single MeSH term back to its disease bucket (None if unknown)."""
+    if not mesh_term:
+        return None
+    return _build_mesh_to_bucket_map().get(mesh_term.lower().strip())
 
 
 # ── Static catalog helpers ────────────────────────────────────────────────────

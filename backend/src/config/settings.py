@@ -13,9 +13,12 @@ DB_AACT   = "aact"
 DB_DRUGS  = "drugs"
 
 # ── Drugs DB – table names ────────────────────────────────────────────────────
-DRUGS_TABLE            = "public.drugs"            # brand_name, generic_name
-DRUG_INDICATIONS_TABLE = "public.drug_indications" # brand_name, indication_name (downstream filter only)
-DRUG_CLASSES_TABLE     = "public.drug_classes"     # brand_name, atc_class_name
+DRUGS_TABLE             = "public.drugs"            # brand_name, generic_name
+DRUG_INDICATIONS_TABLE  = "public.drug_indications" # brand_name, indication_name (legacy — being retired)
+DRUG_INDICATIONS2_TABLE = "public.drug_indications2" # brand_name, indication_mesh (MeSH-based brand resolution)
+DRUG_CLASSES_TABLE      = "public.drug_classes"     # brand_name, atc_class_name
+
+DRUGS_INDICATION_MESH_COL = "indication_mesh"
 
 DRUGS_BRAND_COL      = "brand_name"
 DRUGS_INDICATION_COL = "indication_name"

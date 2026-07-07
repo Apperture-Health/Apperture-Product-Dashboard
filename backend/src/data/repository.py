@@ -12,8 +12,6 @@ Optimisation rules enforced:
 from __future__ import annotations
 
 import json
-from functools import lru_cache
-from pathlib import Path
 
 import pandas as pd
 from utils.runtime import runtime as st
@@ -27,50 +25,14 @@ from data.db import (
     query_market_access,
     query_fdaers,
 )
-from data.query_builder import QueryBuilder, _list_clause
-from utils.filters import FilterState
+from data.query_builder import QueryBuilder, _list_clause, resolve_brands_from_bucket_mesh
+from utils.filters import FilterState, get_bucket_for_mesh_term, get_unique_display_labels
 from config.settings import (
     MAX_TABLE_ROWS, ANNUAL_PRICING_TABLE, HISTORICAL_PRICING_TABLE,
-    DRUG_CLASSES_TABLE, DRUGS_ATC_COL, DRUGS_BRAND_COL, DRUG_INDICATIONS_TABLE, DRUGS_INDICATION_COL,
+    DRUG_CLASSES_TABLE, DRUGS_ATC_COL, DRUGS_BRAND_COL,
+    DRUG_INDICATIONS2_TABLE, DRUGS_INDICATION_MESH_COL,
     MA_TABLE_2025, MA_TABLE_2026,
 )
-
-
-_MESH_TO_INDICATION_MAP_PATH = (
-    Path(__file__).resolve().parents[2] / "catalogs" / "mesh_to_indication_map.json"
-)
-
-
-@lru_cache(maxsize=1)
-def _load_mesh_to_indication_map() -> dict[str, list[str]]:
-    """Load the pre-built MeSH-to-indication mapping from disk once per process."""
-    if not _MESH_TO_INDICATION_MAP_PATH.exists():
-        return {}
-    return json.loads(_MESH_TO_INDICATION_MAP_PATH.read_text(encoding="utf-8"))
-
-
-@st.cache_data(ttl=600, show_spinner=False)
-def _resolve_brands_from_mesh_indication(mesh_term: str) -> list[str]:
-    """
-    Resolve brand names for a global condition using the JSON mapping file.
-    Looks up the condition in mesh_to_indication_map.json, then queries
-    public.drug_indications for matching brands.
-    """
-    if not mesh_term:
-        return []
-    mesh_map = _load_mesh_to_indication_map()
-    matched_indications = mesh_map.get(mesh_term.lower().strip(), [])
-    if not matched_indications:
-        return []
-    sql = f"""
-        SELECT DISTINCT brand_name
-        FROM {DRUG_INDICATIONS_TABLE}
-        WHERE LOWER({DRUGS_INDICATION_COL}) = ANY(:indications)
-          AND brand_name IS NOT NULL
-        ORDER BY 1
-    """
-    df = query_drugs(sql, {"indications": [v.lower() for v in matched_indications]})
-    return df["brand_name"].dropna().tolist() if not df.empty else []
 
 
 @st.cache_data(ttl=600, show_spinner=False)
@@ -82,7 +44,7 @@ def _resolve_relevant_brands_for_global_filters(
     Resolve the relevant brand set for the selected global filters from the
     drugs-side sources (not from co-enrolled trial rows).
 
-    - indication → mesh_to_indication_map.json → public.drug_indications
+    - indication → bucket_to_mesh_map.json → public.drug_indications2 (indication_mesh)
     - atc_class  → public.drug_classes
     - both       → intersection of the two brand sets
     """
@@ -90,7 +52,7 @@ def _resolve_relevant_brands_for_global_filters(
     atc_brands: list[str] | None = None
 
     if indication:
-        mesh_brands = _resolve_brands_from_mesh_indication(indication)
+        mesh_brands = resolve_brands_from_bucket_mesh(indication)
 
     if atc_class:
         sql = f"""
@@ -273,22 +235,28 @@ def get_filter_options(indication: str | None, atc_class: str | None) -> dict:
     else:
         brands_list = _vals(query_aact(sql_brands, nct_params))
 
-    # Drug label indications (DRUGS DB, scoped by brands currently in scope).
-    # These populate the downstream "Drug Indication" filter in the Sponsor/Drug tab.
+    # Downstream "Drug Indication" filter options (Sponsor/Drug tab).
+    # The dropdown shows disease *bucket* labels; behind it we resolve the
+    # in-scope brands' MeSH terms (public.drug_indications2.indication_mesh) and
+    # map each MeSH term back to its bucket. Falls back to all buckets if no
+    # brand scope is available.
     drug_ind_list: list = []
     if brands_list:
         from data.db import query_drugs
         di_ph = ", ".join(f":di_b_{i}" for i in range(len(brands_list)))
         di_p  = {f"di_b_{i}": b for i, b in enumerate(brands_list)}
         sql_drug_ind = f"""
-            SELECT DISTINCT indication_name
-            FROM public.drug_indications
+            SELECT DISTINCT {DRUGS_INDICATION_MESH_COL}
+            FROM {DRUG_INDICATIONS2_TABLE}
             WHERE brand_name IN ({di_ph})
-              AND indication_name IS NOT NULL
-            ORDER BY indication_name
-            LIMIT 300
+              AND {DRUGS_INDICATION_MESH_COL} IS NOT NULL
+            LIMIT 500
         """
-        drug_ind_list = _vals(query_drugs(sql_drug_ind, di_p))
+        mesh_terms = _vals(query_drugs(sql_drug_ind, di_p))
+        buckets = {b for b in (get_bucket_for_mesh_term(m) for m in mesh_terms) if b}
+        drug_ind_list = sorted(buckets)
+    else:
+        drug_ind_list = get_unique_display_labels()
 
     return {
         "sponsors":         _vals(query_aact(sql_sponsors,       nct_params)),
@@ -464,11 +432,11 @@ def get_top_sponsors(filters: FilterState, limit: int = 20) -> pd.DataFrame:
         LIMIT {limit}
     """
     df = query_aact(sql, params)
-    print("DEBUG get_top_sponsors rows:", len(df))
-    try:
-        print("DEBUG get_top_sponsors sample:", df.head(10).to_dict(orient="records"))
-    except Exception as exc:
-        print("DEBUG get_top_sponsors sample failed:", exc)
+    # print("DEBUG get_top_sponsors rows:", len(df))
+    # try:
+    #     print("DEBUG get_top_sponsors sample:", df.head(10).to_dict(orient="records"))
+    # except Exception as exc:
+    #     print("DEBUG get_top_sponsors sample failed:", exc)
     return df
 
 
@@ -641,7 +609,7 @@ def get_pipeline_kpis(
     """
     sql_pros = f"""
         SELECT COUNT(DISTINCT pp.nct_id) AS with_pros
-        FROM public.onco_pipeline_design_outcomes_pro pp
+        FROM public.pipeline_design_outcomes_pro pp
         JOIN public.pipeline_trials pt ON pt.nct_id = pp.nct_id
         {cond_where}
     """
@@ -776,7 +744,7 @@ def get_pipeline_pro_usage(
         SELECT
             pp.instrument_name,
             COUNT(DISTINCT pp.nct_id) AS trial_count
-        FROM public.onco_pipeline_design_outcomes_pro pp
+        FROM public.pipeline_design_outcomes_pro pp
         JOIN public.pipeline_trials pt ON pt.nct_id = pp.nct_id
         {cond_where}
         GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}
@@ -2368,23 +2336,10 @@ def _get_pricing_brand_list(filters: FilterState) -> list[str]:
         return df.iloc[:, 0].dropna().tolist() if not df.empty else []
 
     if filters.indication_name:
-        from config.settings import (
-            BROWSE_CONDITIONS_TABLE,
-            BROWSE_CONDITIONS_MESH_TERM,
-            BROWSE_CONDITIONS_MESH_TYPE,
-            BROWSE_CONDITIONS_MESH_LIST,
-        )
-        sql = f"""
-            SELECT DISTINCT dt.brand_name
-            FROM public.drug_trials dt
-            JOIN {BROWSE_CONDITIONS_TABLE} bc ON bc.nct_id = dt.nct_id
-            WHERE bc.{BROWSE_CONDITIONS_MESH_TYPE} = '{BROWSE_CONDITIONS_MESH_LIST}'
-              AND bc.{BROWSE_CONDITIONS_MESH_TERM} = :ind
-              AND dt.brand_name IS NOT NULL
-            ORDER BY 1
-        """
-        df = query_aact(sql, {"ind": filters.indication_name})
-        return df.iloc[:, 0].dropna().tolist() if not df.empty else []
+        # Resolve the selected disease bucket to brands via the curated MeSH
+        # mapping (bucket → bucket_to_mesh_map.json → public.drug_indications2),
+        # the same path used by the main dashboard's global filter narrowing.
+        return resolve_brands_from_bucket_mesh(filters.indication_name)
 
     return []
 
@@ -2967,15 +2922,15 @@ def get_faers_brand_scope(filters: FilterState) -> tuple[list[str], str | None]:
     if brands:
         if filters.indication_name and not filters.brand_name and not filters.atc_class_name:
             note = (
-                f'Showing FAERS data for {len(brands)} drug(s) linked to '
-                f'"{filters.indication_name}" via the pre-built indication mapping.'
+                f'Showing FAERS data for {len(brands)} drug(s) approved for '
+                f'"{filters.indication_name}" via the MeSH indication mapping.'
             )
             return [b.upper() for b in brands], note
         return [b.upper() for b in brands], None
 
     if filters.indication_name and not filters.brand_name and not filters.atc_class_name:
         note = (
-            f'No drugs mapped to "{filters.indication_name}" in the indication catalog. '
+            f'No drugs mapped to "{filters.indication_name}" in the MeSH indication mapping. '
             "Select a Drug Class or Brand Name in the sidebar to scope FAERS manually."
         )
         return [], note

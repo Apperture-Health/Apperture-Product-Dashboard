@@ -19,8 +19,8 @@ Keys per user:
   disease_areas         : list of allowed disease bucket display labels  (inclusion mode)
   disease_areas_exclude : list of disease bucket display labels to REMOVE (exclusion mode)
                           If both are set, disease_areas (inclusion) wins.
-                          Values must be display labels from catalogs/disease_bucket_mapping.json
-                          (the JSON values, not the raw condition name keys).
+                          Values must be bucket display labels (the top-level keys of
+                          catalogs/bucket_catalog.json).
 
   ── Drug class access (use ONE form, or omit both for all) ───────────────────
   drug_classes         : list of allowed ATC class names        (inclusion mode)

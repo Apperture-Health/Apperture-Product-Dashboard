@@ -244,7 +244,7 @@ export function Sidebar({
           <MultiCheckboxDropdown label="Agency Class" values={filters.sponsor_agency_class} options={filterOptions.agency_classes} onChange={(v) => updateFilter("sponsor_agency_class", v)} />
           <MultiCheckboxDropdown label="Drug (Brand Name)" values={filters.brand_name} options={filterOptions.brands} onChange={(v) => updateFilter("brand_name", v)} />
           <SidebarSelectField
-            label="Drug Indication (Label)"
+            label="Drug Indication"
             value={filters.drug_indication ?? ""}
             onChange={(value) => updateFilter("drug_indication", value || null)}
             options={["", ...filterOptions.drug_indications]}
