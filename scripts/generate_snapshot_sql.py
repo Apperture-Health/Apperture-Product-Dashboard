@@ -4,26 +4,45 @@ scripts/generate_snapshot_sql.py
 Generates a complete SQL file to:
   1. Add a scope_key column to public.overview_kpis_snapshot (idempotent)
   2. Add a UNIQUE constraint on scope_key (idempotent)
-  3. Upsert one snapshot row per unique access profile defined in config/user_access.py
+  3. Upsert one snapshot row per unique access profile, read from the `auth`
+     database tables (user_creds / user_disease_areas / user_drug_classes)
 
 Run from the project root:
     python scripts/generate_snapshot_sql.py
 
 Output: scripts/snapshot_upsert.sql   (run this file on your database)
 
-Does NOT connect to the database — safe to run anywhere.
+Reads user scopes from the auth DB (via backend/src/data/auth_repository.py);
+does NOT execute anything against the KPI database — it only emits SQL.
 """
 from __future__ import annotations
 
 import sys
-import os
 from pathlib import Path
 from datetime import datetime, timezone
 
-# Allow importing from project root
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Allow importing the backend package (auth_repository lives in backend/src).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend" / "src"))
 
-from config.user_access import USER_ACCESS
+from data.auth_repository import get_all_access
+from utils.filters import (
+    get_raw_conditions_for_display_label,
+    build_allowed_indications,
+    build_allowed_atc_classes,
+)
+from config.settings import CONDITIONS_TABLE, CONDITIONS_NAME_COL
+
+
+def resolve_scope(cfg: dict) -> tuple[list[str] | None, list[str] | None]:
+    """Resolve a user's access dict to the same effective allow-lists the runtime
+    uses (data/repository._build_scope_key reads FilterState.allowed_*).
+
+    Exclusion-mode users (disease_areas_exclude / drug_classes_exclude) must be
+    expanded here too, otherwise the generated scope_key would not match the one
+    the app computes at request time and the snapshot lookup would silently fall
+    back to the 'global' row.
+    """
+    return build_allowed_indications(cfg), build_allowed_atc_classes(cfg)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -55,8 +74,10 @@ def build_scope_key(disease_areas: list[str] | None, drug_classes: list[str] | N
 def build_scope_subquery(disease_areas: list[str] | None, drug_classes: list[str] | None) -> str:
     """
     Build the SQL subquery that scopes studies to the given access profile.
-    This mirrors what QueryBuilder.nct_subquery_clause() produces, but
-    resolves ATC classes inline via a JOIN (no Python-side brand resolution needed).
+    This mirrors QueryBuilder.nct_subquery_clause():
+      - disease bucket display labels are expanded to their raw condition names
+        (via bucket_catalog) and matched against ctgov.conditions.downcase_name;
+      - ATC classes resolve to brands inline via a JOIN on public.drug_classes.
 
     Returns a fragment:  s.nct_id IN ( ... )
     """
@@ -67,13 +88,19 @@ def build_scope_subquery(disease_areas: list[str] | None, drug_classes: list[str
     joins: list[str] = []
     wheres: list[str] = []
 
-    # Indication restriction — JOIN browse_conditions
+    # Indication restriction — expand bucket labels → raw condition names, then
+    # JOIN ctgov.conditions (same path the live query uses for allowed_indications).
     if disease_areas is not None:
-        joins.append(
-            "JOIN ctgov.browse_conditions bc ON bc.nct_id = dt.nct_id"
-        )
-        wheres.append("bc.mesh_type = 'mesh-list'")
-        wheres.append(f"bc.downcase_mesh_term IN {_sql_list(disease_areas)}")
+        raw_conditions = sorted({
+            r.lower()
+            for lbl in disease_areas
+            for r in get_raw_conditions_for_display_label(lbl)
+        })
+        joins.append(f"JOIN {CONDITIONS_TABLE} c ON c.nct_id = dt.nct_id")
+        if raw_conditions:
+            wheres.append(f"LOWER(c.{CONDITIONS_NAME_COL}) IN {_sql_list(raw_conditions)}")
+        else:
+            wheres.append("FALSE")
 
     # ATC class restriction — JOIN drug_classes to resolve brands inline
     if drug_classes is not None:
@@ -235,13 +262,15 @@ ALTER TABLE public.overview_kpis_snapshot
 -- ── UPSERTS (re-run whenever access profiles change) ─────────────────────────
 """)
 
+    # Read every user's access profile from the auth DB tables.
+    user_access = get_all_access()
+
     # Collect unique profiles — deduplicate by scope_key so users with identical
     # access don't generate duplicate SQL blocks.
     seen: dict[str, tuple] = {}   # scope_key → (disease_areas, drug_classes)
 
-    for username, cfg in USER_ACCESS.items():
-        disease_areas = cfg.get("disease_areas")   # None or list
-        drug_classes  = cfg.get("drug_classes")    # None or list
+    for username, cfg in user_access.items():
+        disease_areas, drug_classes = resolve_scope(cfg)
         key = build_scope_key(disease_areas, drug_classes)
         if key not in seen:
             seen[key] = (disease_areas, drug_classes)
@@ -254,8 +283,8 @@ ALTER TABLE public.overview_kpis_snapshot
     ordered = sorted(seen.items(), key=lambda kv: (kv[0] != "global", kv[0]))
 
     users_per_scope: dict[str, list[str]] = {}
-    for username, cfg in USER_ACCESS.items():
-        key = build_scope_key(cfg.get("disease_areas"), cfg.get("drug_classes"))
+    for username, cfg in user_access.items():
+        key = build_scope_key(*resolve_scope(cfg))
         users_per_scope.setdefault(key, []).append(username)
 
     for scope_key, (disease_areas, drug_classes) in ordered:
@@ -277,8 +306,9 @@ if __name__ == "__main__":
     print()
     print("Scopes generated:")
     seen: dict[str, list[str]] = {}
-    for username, cfg in USER_ACCESS.items():
-        key = build_scope_key(cfg.get("disease_areas"), cfg.get("drug_classes"))
+    for username, cfg in get_all_access().items():
+        key = build_scope_key(*resolve_scope(cfg))
         seen.setdefault(key, []).append(username)
     for key, users in sorted(seen.items()):
-        print(f"  {key:<60}  (users: {', '.join(sorted(users))})")
+        label = key if len(key) <= 60 else key[:57] + "..."
+        print(f"  {label:<60}  (users: {', '.join(sorted(users))})")

@@ -1,0 +1,10 @@
+{
+  "extraPaths": ["backend/src"],
+  "typeCheckingMode": "off",
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    "legacy",
+    "frontend"
+  ]
+}

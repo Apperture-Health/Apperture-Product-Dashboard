@@ -23,7 +23,8 @@ DBS = {
     "fdaers":  st.secrets["dbs"]["db_name_fdaers"],
     "pricing": st.secrets["dbs"]["db_name_pricing"],
     "drugs": st.secrets["dbs"]["db_name_drugs"],
-    "marketaccess": st.secrets["dbs"]["db_name_marketaccess"]
+    "marketaccess": st.secrets["dbs"]["db_name_marketaccess"],
+    "auth": st.secrets["dbs"]["db_name_auth"],
 }
 
 # One shared connector

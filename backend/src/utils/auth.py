@@ -1,45 +1,31 @@
 """
-Backend auth helpers preserving the Streamlit app's credential and access rules.
+Backend auth helpers. Credentials and access policy are read from the `users`
+table in the `auth` database (see data/auth_repository.py) — not from the old
+secrets.toml [users.*] block or the config/user_access.py dict.
 """
 from __future__ import annotations
 
-import warnings
-
 from api.page_registry import PAGE_MAP
-from config.user_access import USER_ACCESS
-from utils.runtime import runtime
-
-
-def _load_users() -> dict:
-    try:
-        return dict(runtime.secrets["users"])
-    except KeyError:
-        return {}
+from data.auth_repository import get_access_dict, get_user_row, verify_password
 
 
 def authenticate(username: str, password: str) -> tuple[bool, dict]:
-    users = _load_users()
-    if not users or username not in users:
+    """Verify credentials against the DB. Returns (True, access_dict) on success,
+    where access_dict holds only the access-policy fields (no credentials)."""
+    row = get_user_row(username)
+    if not row:
         return False, {}
 
-    user_cfg = users[username]
-    if user_cfg.get("password", "") != password:
+    if not verify_password(password, row.get("password", "")):
         return False, {}
 
-    if username not in USER_ACCESS:
-        warnings.warn(
-            f"User '{username}' authenticated via secrets.toml but has no USER_ACCESS entry.",
-            stacklevel=2,
-        )
-        return False, {}
-
-    return True, dict(USER_ACCESS[username])
+    return True, get_access_dict(username)
 
 
 def get_user_access(username: str | None) -> dict:
     if not username:
         return {}
-    return dict(USER_ACCESS.get(username, {}))
+    return get_access_dict(username)
 
 
 def _tab_text(label: str) -> str:
@@ -67,11 +53,11 @@ def get_allowed_tabs_for_user(username: str | None) -> list[str]:
 
     Unknown username returns only the Home tab.
     """
-    if not username or username not in USER_ACCESS:
+    cfg = get_access_dict(username) if username else {}
+    if not cfg:
         fallback = [label for _, label, _ in PAGE_MAP if _tab_text(label) == "Home"]
         return fallback or ([PAGE_MAP[0][1]] if PAGE_MAP else [])
 
-    cfg = USER_ACCESS[username]
     allowed_tabs  = cfg.get("tabs")
     excluded_tabs = cfg.get("tabs_exclude")
 

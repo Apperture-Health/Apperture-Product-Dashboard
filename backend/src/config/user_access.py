@@ -1,92 +1,43 @@
 """
-Per-user access configuration.
+DEPRECATED / RETIRED — reference documentation only.
 
-Edit USER_ACCESS to control what each user can see and access.
+Per-user access is no longer configured in code. Users, passwords (plain text),
+and access policy now live in the `auth` database and are read via
+backend/src/data/auth_repository.py. Manage users with direct SQL; changes are
+picked up by the dashboard live (~60s cache), no code edit or restart needed.
 
-Keys per user:
-  display_name  : str — shown in the sidebar user badge
+Nothing imports USER_ACCESS anymore; it is kept empty only as a safety net.
 
-  ── Tab access (use ONE form, or omit both for all tabs) ──────────────────────
-  tabs          : list of tab names to ALLOW  (inclusion mode)
-  tabs_exclude  : list of tab names to REMOVE from the full list (exclusion mode)
-                  If both are set, tabs (inclusion) wins.
-                  Valid names (plain text, emojis optional):
-                    Home, Ask the Data, Pipeline, Drug Detail, Drug Pricing,
-                    Market Access, Sponsors, Trial Design, Endpoints, Outcomes,
-                    Scores, PRO Overview, Trial Groups, Safety
+────────────────────────────────────────────────────────────────────────────
+auth database schema (one entry per user/value pair):
 
-  ── Disease area access (use ONE form, or omit both for all) ─────────────────
-  disease_areas         : list of allowed disease bucket display labels  (inclusion mode)
-  disease_areas_exclude : list of disease bucket display labels to REMOVE (exclusion mode)
-                          If both are set, disease_areas (inclusion) wins.
-                          Values must be bucket display labels (the top-level keys of
-                          catalogs/bucket_catalog.json).
+  user_creds          (username PK, password, display_name, is_active)
+  user_tabs           (username, tab,          mode)   mode in ('include','exclude')
+  user_disease_areas  (username, disease_area, mode)
+  user_drug_classes   (username, drug_class,   mode)
 
-  ── Drug class access (use ONE form, or omit both for all) ───────────────────
-  drug_classes         : list of allowed ATC class names        (inclusion mode)
-  drug_classes_exclude : list of ATC class names to REMOVE      (exclusion mode)
-                         If both are set, drug_classes (inclusion) wins.
-                         Values must match atc_class_name in the drugs database.
-                         See catalogs/condition_sponsor_values.json for valid values.
+Per-attribute semantics (reconstructed into tabs / tabs_exclude / disease_areas
+/ … by auth_repository.get_user_row):
+  - rows with mode='include' → allow-list   (e.g. `tabs`)
+  - rows with mode='exclude' → deny-list     (e.g. `tabs_exclude`)
+  - no rows for an attribute → no restriction (show everything)
+  - inclusion wins over exclusion
 
-Convention:
-  None / key absent = no restriction (show everything)
-  []                = deny all (user sees nothing — avoid this)
-  [...]             = restricted to / excluding these values
+  Tab names (emojis optional): Home, Ask the Data, Pipeline, Drug Detail,
+    Drug Pricing, Market Access, Sponsors, Trial Design, Endpoints, Outcomes,
+    Scores, PRO Overview, Trial Groups, Safety, Real World Safety
+  disease_area values = top-level keys of catalogs/bucket_catalog.json
+  drug_class values   = atc_class_name (see catalogs/condition_sponsor_values.json)
 
-To add a new user:
-  1. Add an entry here under their username (must match the key in secrets.toml [users.*])
-  2. Add their password to .streamlit/secrets.toml under [users.<username>]
+Add a user (direct SQL against the `auth` DB):
+  INSERT INTO user_creds (username, password, display_name)
+    VALUES ('newuser', 'PlainPassword', 'New User');
+  INSERT INTO user_tabs (username, tab, mode) VALUES
+    ('newuser','Home','include'), ('newuser','Pipeline','include');
+  INSERT INTO user_disease_areas (username, disease_area, mode) VALUES
+    ('newuser','Breast Cancer','include');
+────────────────────────────────────────────────────────────────────────────
 """
 
-USER_ACCESS: dict[str, dict] = {
-    "admin": {
-        "display_name": "Administrator",
-        "tabs":          None,
-        "disease_areas": None,
-        "drug_classes":  None,
-    },
-    "User1": {
-        "display_name": "User1",
-        "tabs": [
-            "Home",
-            "Pipeline",
-            "Drug Detail",
-            "Trial Design",
-            "Outcomes",
-        ],
-        "disease_areas": ["Breast Cancer", "Lung Cancer"],
-        "drug_classes":  None,
-    },
-    "sahil": {
-        "display_name": "Sahil",
-        "tabs": [
-            "Home",
-            "Drug Detail",
-            "Sponsors",
-            "Endpoints",
-            "Outcomes",
-            "Safety",
-        ],
-        "disease_areas": None,
-        "drug_classes":  None,
-    },
-    "ambi": {
-        "display_name": "Ambi",
-        "tabs": None,
-        "disease_areas": ["Atopic Dermatitis / Eczema", "Migraine", "Chronic Obstructive Pulmonary Disease"],
-        "drug_classes":  None,
-    },
-    "User2": {
-        "display_name": "User2",
-        "tabs_exclude": ["Drug Pricing", "Market Access", "Scores","Trial Groups"],
-        "disease_areas_exclude": ["Atopic Dermatitis / Eczema", "Migraine", "Chronic Obstructive Pulmonary Disease"],
-        "drug_classes":  None,
-    },
-    "User3": {
-        "display_name": "User3",
-        "tabs_exclude": ['Drug Pricing', 'Market Access', 'Scores'],
-        "disease_areas": ["Atopic Dermatitis / Eczema", "Migraine", "Chronic Obstructive Pulmonary Disease"],
-        "drug_classes":  None,
-    }
-}
+# Retired — access now lives in the `auth` DB. Do not add users here.
+USER_ACCESS: dict[str, dict] = {}
