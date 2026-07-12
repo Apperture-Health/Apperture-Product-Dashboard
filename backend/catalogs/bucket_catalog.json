@@ -417,9 +417,14 @@
       "Food Allergy",
       "Food Allergy Peanut",
       "Grass Pollen Allergy",
-      "Peanut Allergy"
+      "Peanut Allergy",
+      "rhinitis allergic",
+      "rhinitis, allergic"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "peanut hypersensitivity",
+      "rhinitis, allergic"
+    ]
   },
   "Alopecia": {
     "conditions": [
@@ -440,7 +445,10 @@
       "Frontotemporal Dementia",
       "Progressive Cognitive Decline"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "alzheimer disease",
+      "dementia"
+    ]
   },
   "Amyloidosis": {
     "conditions": [
@@ -462,6 +470,7 @@
       "Systemic Light Chain Amyloidosis"
     ],
     "mesh_terms": [
+      "amyloidosis",
       "immunoglobulin light-chain amyloidosis"
     ]
   },
@@ -484,9 +493,12 @@
       "Squamous Cell Anal Cancer",
       "Squamous Cell Carcinoma of Anal Canal",
       "Squamous Cell Carcinoma of the Anal Canal",
+      "anal dysplasia",
+      "anal hsil",
       "p16 Positive Squamous Cell Carcinoma of the Anus or Anal Canal"
     ],
     "mesh_terms": [
+      "anal gland neoplasms",
       "anus neoplasms"
     ]
   },
@@ -536,7 +548,9 @@
       "Severe Uncontrolled Asthma",
       "Uncontrolled Asthma"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "asthma"
+    ]
   },
   "Atopic Dermatitis / Eczema": {
     "conditions": [
@@ -558,10 +572,15 @@
       "Moderate-to-Severe Atopic Dermatitis",
       "Moderate-to-severe Atopic Dermatitis",
       "Severe Atopic Dermatitis (AD)",
-      "Skin Diseases, Eczematous"
+      "Skin Diseases, Eczematous",
+      "atopic dermatitis, unspecified",
+      "dermatitis, atopic dermatitis",
+      "nummular eczema"
     ],
     "mesh_terms": [
-      "dermatitis, atopic"
+      "dermatitis, atopic",
+      "eczema",
+      "skin diseases, eczematous"
     ]
   },
   "Autoimmune Disease": {
@@ -571,9 +590,13 @@
       "Autoimmune Disorders",
       "Autoimmune and Chronic Inflammatory Diseases",
       "Warm Autoimmune Hemolytic Anemia",
-      "Warm Autoimmune Hemolytic Anemia (wAIHA)"
+      "Warm Autoimmune Hemolytic Anemia (wAIHA)",
+      "warm antibody autoimmune hemolytic anemia"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "anemia, hemolytic, autoimmune",
+      "autoimmune diseases"
+    ]
   },
   "Basal Cell Carcinoma": {
     "conditions": [
@@ -587,9 +610,11 @@
       "Nevoid Basal Cell Carcinoma Syndrome",
       "Skin Basal Cell Carcinoma",
       "Sporadic Superficial and Nodular Skin Basal Cell Carcinomas",
-      "Treatment for Basal Cell Carcinomas (BCCs) in Gorlin Syndrome Patients"
+      "Treatment for Basal Cell Carcinomas (BCCs) in Gorlin Syndrome Patients",
+      "superficial basal cell carcinoma"
     ],
     "mesh_terms": [
+      "basal cell nevus syndrome",
       "carcinoma, basal cell",
       "neoplasms, basal cell"
     ]
@@ -639,7 +664,11 @@
       "P2: Biliary Tract Cancer",
       "Resectable Biliary Tract Cancer",
       "Unresectable Cholangiocarcinoma",
-      "Unresectable Intrahepatic Cholangiocarcinoma"
+      "Unresectable Intrahepatic Cholangiocarcinoma",
+      "her2-amplified biliary tract cancers",
+      "her2-expressing gastrointestinal cancers, including gastroesophageal adenocarcinoma, biliary tract cancer, and colorectal cancer",
+      "locally advanced, unresectable or metastatic cholangiocarcinoma with an idh1 mutation",
+      "neoplasms, abdominal"
     ],
     "mesh_terms": [
       "abdominal neoplasms",
@@ -868,7 +897,10 @@
       "Uncommon EGFR Mutations",
       "c-MET Inhibitor; PI3K Inhibitor, PTEN Mutations, Homozygous Del. of PTEN or PTEN Neg. by IHC, c-Met Ampli. by FISH, INC280, BKM120, Buparlisib; Recurrent GBM"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "blood protein disorders",
+      "dna repair-deficiency disorders"
+    ]
   },
   "Blood Disorder / Cytopenia": {
     "conditions": [
@@ -895,9 +927,14 @@
       "Refractory Anemia",
       "Refractory Anemia With Excess Blasts in Transformation",
       "Severe Chronic Neutropenia",
-      "Thrombocytopenia"
+      "Thrombocytopenia",
+      "primary immune thrombocytopenia",
+      "primary immune thrombocytopenia (itp)"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "neutropenia",
+      "thrombocytopenia"
+    ]
   },
   "Bone / Bone Marrow Disorder": {
     "conditions": [
@@ -1110,15 +1147,34 @@
       "Supratentorial Glioblastoma",
       "Unmethylated Glioblastoma",
       "WHO Grade III Glioma",
-      "WHO Grade IV Glioma"
+      "WHO Grade IV Glioma",
+      "diffuse intrinsic pontine glioma (dipg)",
+      "grade 2 astrocytoma or oligodendroglioma with an idh1 or idh2 mutation",
+      "grade 2 glioma",
+      "high and low grade glioma",
+      "high-grade glioma (hgg)",
+      "idh1-mutant glioma",
+      "idh2-mutant glioma",
+      "posterior fossa-a ependymoma",
+      "residual glioma",
+      "residual or recurrent grade 2 idh mutant glioma"
     ],
     "mesh_terms": [
       "astrocytoma",
+      "carcinoma, embryonal",
+      "cerebellar neoplasms",
+      "craniopharyngioma",
       "ependymoma",
+      "ganglioglioma",
       "glioblastoma",
       "glioma",
+      "medulloblastoma",
+      "meningioma",
+      "neurocytoma",
       "oligodendroglioma",
-      "paraganglioma"
+      "optic nerve glioma",
+      "paraganglioma",
+      "rhabdoid tumor"
     ]
   },
   "Breast Cancer": {
@@ -1448,10 +1504,19 @@
       "Unresectable Breast Carcinoma",
       "Unresectable Locally Advanced Invasive Breast Cancer",
       "Unresectable Triple-Negative Breast Carcinoma",
-      "Unrespectable Locally Advanced and or Metastatic HER2 Positive Breast Cancer Participants"
+      "Unrespectable Locally Advanced and or Metastatic HER2 Positive Breast Cancer Participants",
+      "advanced solid tumors, excluding breast cancer",
+      "breast cancer subjects",
+      "her2 positive metastatic breast cancer",
+      "hr+/her2-negative breast cancer",
+      "locally recurrent or metastatic breast cancer",
+      "unresectable locally metastatic breast cancer",
+      "unresectable locally recurrent breast cancer"
     ],
     "mesh_terms": [
       "breast neoplasms",
+      "breast neoplasms, male",
+      "carcinoma, ductal, breast",
       "inflammatory breast neoplasms",
       "triple negative breast neoplasms",
       "unilateral breast neoplasms"
@@ -1492,9 +1557,12 @@
       "Long COVID Syndrome",
       "Long Covid 19",
       "Post-COVID Condition",
-      "Symptomatic COVID-19 Infection Laboratory-Confirmed"
+      "Symptomatic COVID-19 Infection Laboratory-Confirmed",
+      "long-chain fatty acid oxidation disorders (lc-faod)"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "long qt syndrome"
+    ]
   },
   "Cancer / Neoplasm": {
     "conditions": [
@@ -2022,40 +2090,178 @@
       "Virus-associated Tumors",
       "Wilms Tumor",
       "Xp11 Translocation Carcinoma",
+      "actinic keratoses",
+      "actinic keratosis",
+      "actinic keratosis (ak)",
+      "advanced b cell malignancies",
+      "advanced gastroesophageal adenocarcinoma",
+      "advanced gastrointestinal carcinoma",
+      "advanced gastrointestinal malignancies",
+      "advanced non-central nervous system (cns) malignancies",
+      "advanced unresectable gastric adenocarcinoma",
+      "advanced urothelial cancer",
+      "anal high grade squamous intraepithelial lesion",
+      "anal high-grade squamous intraepithelial lesion",
+      "anal precancerous condition",
+      "bone-metastatic, castration-resistant prostate cancer",
+      "brain tumor, primary",
       "cT2a N0NxM0 Renal Tumor",
+      "cancer and chemotherapy related anemia",
+      "cancer of colon",
+      "cancer of liver",
+      "cancer therapy-related diarrhea",
+      "cancer, gall bladder",
+      "carcinoma surgery",
+      "carcinomas",
+      "castrate resistant prostate cancer with bone metastasis",
+      "central nervous system pathology",
+      "cervical dysplasia",
+      "chronic myeloproliferative neoplasms",
+      "ectopic acth secreting (eas) tumors",
+      "ectopic acth syndrome",
+      "fibrolamellar carcinoma",
+      "gastric or gastro-esophageal junction (gej) adenocarcinoma",
+      "gastric type adenocarcinoma (gas) with stk11 mutation",
+      "hepatic tumors",
+      "hepato cellular carcinoma (hcc)",
+      "her 2 positive gastric cancer",
+      "high-risk localized prostate cancer",
+      "hormone treatment-naïve participants with prostate cancer",
+      "keratosis, actinic",
+      "lambert eaton myasthenic syndrome",
+      "lambert-eaton myasthenic syndrome",
+      "lipoma",
+      "locally advanced or metastatic gc and gcj adenocarcinoma",
+      "locally advanced or metastatic solid tumors for phase 1, dose escalation and phase 2 safety lead-in",
+      "nelson syndrome",
+      "non-functioning pituitary adenoma",
+      "other advanced solid tumors",
       "p16 Positive Squamous Cell Carcinoma of the Penis",
-      "p16 Positive Squamous Cell Carcinoma of the Vagina or Vulva"
+      "p16 Positive Squamous Cell Carcinoma of the Vagina or Vulva",
+      "pan-tumor",
+      "patients who have/have had melanoma and other tumors",
+      "pituitary neoplasm",
+      "pituitary tumors",
+      "polycystic ovary syndrome",
+      "pre-cancerous dysplasia",
+      "primary brain tumor",
+      "recurrent gastric adenocarcinoma",
+      "recurrent gastroesophageal junction adenocarcinoma",
+      "recurrent gastrointestinal carcinoma",
+      "relapsed or refractory advanced cancer",
+      "seizure in participants with tuberous sclerosis complex",
+      "solid advanced tumor",
+      "solid malignancies, with or without lung metastases",
+      "solid tumours harboring nrg1 fusion",
+      "tuberous sclerosis complex",
+      "tuberous sclerosis complex associated neuropsychiatric disease",
+      "tumours, gynecological",
+      "unresectable pleural or peritoneal malignant mesothelioma"
     ],
     "mesh_terms": [
+      "acth syndrome, ectopic",
       "adenocarcinoma",
+      "adenocarcinoma, papillary",
+      "adenoma",
+      "adenoma, pleomorphic",
+      "adrenal cortex neoplasms",
+      "adrenal gland neoplasms",
+      "ameloblastoma",
       "bone neoplasms",
       "brain neoplasms",
       "bronchial neoplasms",
+      "carcinoma",
+      "carcinoma, adenosquamous",
+      "carcinoma, ductal",
+      "carcinoma, intraductal, noninfiltrating",
+      "carcinoma, large cell",
+      "carcinoma, papillary",
       "carcinoma, small cell",
       "carcinoma, squamous cell",
+      "central nervous system cysts",
       "central nervous system neoplasms",
+      "choroid plexus neoplasms",
+      "dendritic cell sarcoma, follicular",
       "desmoplastic small round cell tumor",
       "digestive system neoplasms",
+      "dysgerminoma",
+      "endocrine gland neoplasms",
       "gastrointestinal neoplasms",
       "genital neoplasms, female",
+      "genital neoplasms, male",
+      "giant cell tumor of bone",
       "giant cell tumor of tendon sheath",
+      "giant cell tumors",
+      "hemangioblastoma",
+      "histiocytic sarcoma",
       "intestinal neoplasms",
+      "keratosis, actinic",
+      "lambert-eaton myasthenic syndrome",
+      "laryngeal neoplasms",
+      "leiomyoma",
+      "leukoplakia",
+      "lipoma",
       "liver neoplasms",
       "lung neoplasms",
+      "lynch syndrome ii",
+      "mediastinal neoplasms",
+      "meningeal carcinomatosis",
+      "mixed tumor, malignant",
+      "multiple endocrine neoplasia",
+      "myofibromatosis",
+      "nelson syndrome",
+      "neoplasm invasiveness",
       "neoplasm metastasis",
+      "neoplasm recurrence, local",
       "neoplasms",
       "neoplasms by histologic type",
       "neoplasms by site",
+      "neoplasms, experimental",
+      "neoplasms, germ cell and embryonal",
+      "neoplasms, glandular and epithelial",
+      "neoplasms, multiple primary",
+      "neoplasms, nerve tissue",
       "neoplasms, neuroepithelial",
       "neoplasms, plasma cell",
+      "neoplasms, radiation-induced",
+      "neoplasms, second primary",
       "neoplasms, squamous cell",
+      "neoplastic cells, circulating",
+      "nerve sheath neoplasms",
+      "nervous system neoplasms",
+      "neuroectodermal tumors",
+      "neuroectodermal tumors, primitive",
+      "neuroectodermal tumors, primitive, peripheral",
+      "nevi and melanomas",
+      "odontogenic tumors",
+      "papilloma",
+      "paranasal sinus neoplasms",
+      "paraneoplastic syndromes, nervous system",
+      "penile neoplasms",
       "peritoneal neoplasms",
+      "pituitary neoplasms",
+      "polycystic ovary syndrome",
+      "precancerous conditions",
+      "preleukemia",
+      "pseudomyxoma peritonei",
       "respiratory tract neoplasms",
+      "seminoma",
       "skin neoplasms",
+      "soft tissue neoplasms",
+      "solitary fibrous tumors",
+      "spinal neoplasms",
       "synovitis, pigmented villonodular",
+      "teratoma",
+      "testicular neoplasms",
       "thoracic neoplasms",
+      "thymus neoplasms",
+      "trophoblastic neoplasms",
+      "tuberous sclerosis",
+      "urethral neoplasms",
       "urogenital neoplasms",
-      "urologic neoplasms"
+      "urologic neoplasms",
+      "uterine cervical dysplasia",
+      "wilms tumor"
     ]
   },
   "Cancer Treatment / Therapy Concept": {
@@ -2085,7 +2291,10 @@
       "Oncology Patients Receiving Chemotherapy",
       "Tislelizumab Antineoplastic Agents, Immunological"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "androgen-insensitivity syndrome",
+      "chemotherapy-induced febrile neutropenia"
+    ]
   },
   "Cancer of Unknown Primary": {
     "conditions": [
@@ -2094,7 +2303,9 @@
       "Carcinoma of Unknown Primary",
       "Unknown Primary Tumors"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "neoplasms, unknown primary"
+    ]
   },
   "Cardiovascular Disease": {
     "conditions": [
@@ -2106,7 +2317,10 @@
       "ST Elevation Myocardial Infarction",
       "STEMI - ST Elevation Myocardial Infarction"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "myocardial infarction",
+      "st elevation myocardial infarction"
+    ]
   },
   "Cervical Cancer": {
     "conditions": [
@@ -2145,7 +2359,9 @@
       "Squamous Cell Carcinoma of the Cervix",
       "Stage IVB Cervical Cancer American Joint Committee on Cancer (AJCC) v8"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "cervical intraepithelial neoplasia"
+    ]
   },
   "Chronic Lymphocytic Leukemia / Small Lymphocytic Lymphoma": {
     "conditions": [
@@ -2260,9 +2476,12 @@
       "Chronic Myelomonocytic Leukemia",
       "Chronic Myelomonocytic Leukemia (CMML)",
       "Recurrent Chronic Myelomonocytic Leukemia",
-      "Refractory Chronic Myelomonocytic Leukemia"
+      "Refractory Chronic Myelomonocytic Leukemia",
+      "myelomonocytic"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "leukemia, myelomonocytic, acute"
+    ]
   },
   "Chronic Obstructive Pulmonary Disease": {
     "conditions": [
@@ -2292,7 +2511,10 @@
       "Rhinosinusitis",
       "Sinusitis"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "nasal polyps",
+      "sinusitis"
+    ]
   },
   "Clinical / Staging Concept": {
     "conditions": [
@@ -2406,9 +2628,12 @@
       "Chronic Cluster Headache",
       "Cluster Headache",
       "Cluster Headache, Episodic",
-      "Episodic Cluster Headache"
+      "Episodic Cluster Headache",
+      "cluster headache - episodic and chronic"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "cluster headache"
+    ]
   },
   "Colorectal Cancer": {
     "conditions": [
@@ -2604,6 +2829,8 @@
       "Unresectable Metastatic Colorectal Cancer",
       "Unresectable Rectal Adenocarcinoma",
       "Unresectable or Metastatic Microsatellite Stable/Mismatch Repair Proficient Colorectal Cancer",
+      "advanced/metastatic colorectal cancer",
+      "her2 ihc3+ advanced colorectal cancer",
       "pMMR/MSS Adenocarcinoma of the Colon or Rectum"
     ],
     "mesh_terms": [
@@ -2638,9 +2865,14 @@
   "Cystic Fibrosis": {
     "conditions": [
       "Cystic Fibrosis",
-      "Non-cystic Fibrosis Bronchiectasis"
+      "Non-cystic Fibrosis Bronchiectasis",
+      "cystic fibrosis, homozygous for the f508del cftr mutation",
+      "cystic fibrosis, homozygous or heterozygous for the f508del-cftr mutation",
+      "in development for cystic fibrosis"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "cystic fibrosis"
+    ]
   },
   "Dermatologic / Atopic Condition": {
     "conditions": [
@@ -2655,7 +2887,10 @@
       "Skin Diseases",
       "Skin Diseases, Genetic"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "fasciitis",
+      "hand-foot syndrome"
+    ]
   },
   "Diabetes Mellitus": {
     "conditions": [
@@ -2663,9 +2898,18 @@
       "Diabetes Mellitus, Type 1",
       "Type 1 Diabetes",
       "Type 1 Diabetes Mellitus",
-      "Type 2 Diabetes Mellitus"
+      "Type 2 Diabetes Mellitus",
+      "diabetes",
+      "diabetes mellitus, non insulin dependent",
+      "diabetes mellitus, type ii",
+      "diabetes, hyperlipidemia, mixed dyslipidemia",
+      "type 2 diabetes mellitus (t2dm)",
+      "type ii diabetes mellitus"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "diabetes mellitus",
+      "diabetes mellitus, type 1"
+    ]
   },
   "Diffuse Large B-Cell Lymphoma": {
     "conditions": [
@@ -2809,10 +3053,13 @@
       "Uterine Fibroids",
       "Uterine Leiomyoma",
       "Uterine Neoplasms",
-      "Uterine Serous Carcinoma"
+      "Uterine Serous Carcinoma",
+      "uterine cervical cancer"
     ],
     "mesh_terms": [
+      "carcinosarcoma",
       "endometrial neoplasms",
+      "sarcoma, endometrial stromal",
       "uterine cervical neoplasms",
       "uterine neoplasms"
     ]
@@ -2823,9 +3070,12 @@
       "Endometriosis Externa",
       "Endometriosis Ovary",
       "Endometriosis Related Pain",
-      "Endometriosis, Rectum"
+      "Endometriosis, Rectum",
+      "endometriosis, pain"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "endometriosis"
+    ]
   },
   "Eosinophilic Gastrointestinal Disease": {
     "conditions": [
@@ -2838,7 +3088,11 @@
       "Eosinophilic Gastroenteritis",
       "Eosinophilic Gastrointestinal Disease (EGID)"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "eosinophilic esophagitis",
+      "gastritis",
+      "gastroenteritis"
+    ]
   },
   "Eosinophilic Granulomatosis with Polyangiitis": {
     "conditions": [
@@ -2848,7 +3102,10 @@
       "Eosinophilic Granulomatosis With Polyangiitis",
       "Eosinophilic Granulomatosis With Polyangiitis (EGPA)"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "churg-strauss syndrome",
+      "granulomatosis with polyangiitis"
+    ]
   },
   "Esophageal Cancer": {
     "conditions": [
@@ -3107,9 +3364,14 @@
       "Postneoadjuvant Therapy Stage IVA Gastroesophageal Junction Adenocarcinoma AJCC v8",
       "Postneoadjuvant Therapy Stage IVB Gastroesophageal Junction Adenocarcinoma AJCC v8",
       "Siewert Type 1 GEJ Cancer",
-      "Unresectable Gastroesophageal Junction Adenocarcinoma"
+      "Unresectable Gastroesophageal Junction Adenocarcinoma",
+      "gastro esophageal reflux",
+      "gastroesophageal junction expressing guanylyl cyclase c",
+      "gastroesophageal reflux disease"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "gastroesophageal reflux"
+    ]
   },
   "Gastrointestinal Stromal Tumor": {
     "conditions": [
@@ -3149,9 +3411,12 @@
       "Graft-Versus-Host Disease",
       "Graft-versus-host Disease",
       "Graft-versus-host Disease (GVHD)",
-      "Recurrent Moderate-Severe Chronic Graft Versus Host Disease"
+      "Recurrent Moderate-Severe Chronic Graft Versus Host Disease",
+      "acute graft versus host disease"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "graft vs host disease"
+    ]
   },
   "Gynecologic Condition": {
     "conditions": [
@@ -3316,15 +3581,18 @@
       "Stage IVC Oral Cavity Squamous Cell Carcinoma AJCC v6 and v7",
       "Stage IVC Oropharyngeal Squamous Cell Carcinoma",
       "Stage IVC Oropharyngeal Squamous Cell Carcinoma AJCC v7",
-      "Unresectable Head and Neck Squamous Cell Carcinoma"
+      "Unresectable Head and Neck Squamous Cell Carcinoma",
+      "recurrent or metastatic nasopharyngeal carcinoma"
     ],
     "mesh_terms": [
       "carcinoma, adenoid cystic",
       "head and neck neoplasms",
+      "lip neoplasms",
       "mouth neoplasms",
       "nasopharyngeal carcinoma",
       "nasopharyngeal neoplasms",
       "oropharyngeal neoplasms",
+      "parotid neoplasms",
       "salivary gland neoplasms",
       "squamous cell carcinoma of head and neck"
     ]
@@ -3362,10 +3630,12 @@
       "Solid Tumors and Hematologic Malignancy",
       "Solid and Hematological Malignancies",
       "Systemic Mastocytosis With an Associated Hematologic Neoplasm",
-      "Systemic Mastocytosis-associated Hematologic Non-mast Cell Disease"
+      "Systemic Mastocytosis-associated Hematologic Non-mast Cell Disease",
+      "other idh1-mutated positive hematologic malignancies"
     ],
     "mesh_terms": [
       "dendritic cell sarcoma, interdigitating",
+      "hematologic diseases",
       "hematologic neoplasms"
     ]
   },
@@ -3499,9 +3769,11 @@
       "T-Cell Non-Hodgkin Lymphoma",
       "Transformed Indolent Non-Hodgkin's Lymphoma",
       "Transformed Non-Hodgkin Lymphoma",
-      "Transformed Recurrent Non-Hodgkin Lymphoma"
+      "Transformed Recurrent Non-Hodgkin Lymphoma",
+      "disease, hodgkin"
     ],
     "mesh_terms": [
+      "hodgkin disease",
       "lymphoma, non-hodgkin"
     ]
   },
@@ -3515,9 +3787,16 @@
       "Crohn's Disease (CD)",
       "Ulcerative Colitis",
       "Ulcerative Colitis (UC)",
-      "Ulcerative Colitis Acute"
+      "Ulcerative Colitis Acute",
+      "active mild ulcerative colitis, active moderate ulcerative colitis, healthy subjects",
+      "moderately to severely active ulcerative colitis",
+      "steroid dependent crohn's disease",
+      "uc - ulcerative colitis"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "colitis, ulcerative",
+      "crohn disease"
+    ]
   },
   "Kaposi Sarcoma": {
     "conditions": [
@@ -3530,7 +3809,9 @@
       "Sarcoma, Kaposi",
       "Skin Kaposi Sarcoma"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "sarcoma, kaposi"
+    ]
   },
   "Kidney Cancer / Renal Cell Carcinoma": {
     "conditions": [
@@ -3628,11 +3909,16 @@
       "Unclassified Renal Cell Carcinoma",
       "Unresectable Advanced Renal Cell Carcinoma",
       "VHL-Associated Clear Cell Renal Cell Carcinoma",
-      "VHL-Associated Renal Cell Carcinoma"
+      "VHL-Associated Renal Cell Carcinoma",
+      "chronic kidney disease",
+      "kidney failure",
+      "kidney transplant"
     ],
     "mesh_terms": [
       "adenocarcinoma, clear cell",
       "carcinoma, renal cell",
+      "kidney diseases",
+      "kidney failure, chronic",
       "kidney neoplasms"
     ]
   },
@@ -3644,7 +3930,9 @@
       "Renal Disease",
       "Renal Disease, End-Stage"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "renal insufficiency, chronic"
+    ]
   },
   "Leukemia": {
     "conditions": [
@@ -3742,19 +4030,39 @@
       "T-cell Prolymphocytic Leukemia (T-PLL)",
       "T-cell Type Acute Leukemia-Precursor",
       "T-cell-prolymphocytic Leukemia",
-      "T-lymphoblastic Lymphoma/Leukaemia"
+      "T-lymphoblastic Lymphoma/Leukaemia",
+      "acute promyelocytic leukemia (apl)",
+      "leukemia, hairy cell",
+      "leukemia, myelocytic, acute",
+      "mixed lineage leukemia",
+      "philadelphia positive chronic myeloid leukemia",
+      "relapsed or refractory chronic lymphocytic leukemia (cll)",
+      "relapsed or refractory idh1 mutation-positive acute myeloid leukemia",
+      "relapsed/refractory aggressive b-cell lymphomas"
     ],
     "mesh_terms": [
+      "blast crisis",
       "leukemia",
+      "leukemia l1210",
+      "leukemia l5178",
+      "leukemia p388",
       "leukemia, b-cell",
       "leukemia, biphenotypic, acute",
+      "leukemia, hairy cell",
       "leukemia, lymphocytic, chronic, b-cell",
       "leukemia, lymphoid",
+      "leukemia, mast-cell",
+      "leukemia, megakaryoblastic, acute",
       "leukemia, myelogenous, chronic, bcr-abl positive",
+      "leukemia, myeloid",
       "leukemia, myeloid, acute",
       "leukemia, myeloid, chronic-phase",
       "leukemia, myelomonocytic, chronic",
       "leukemia, myelomonocytic, juvenile",
+      "leukemia, prolymphocytic",
+      "leukemia, prolymphocytic, b-cell",
+      "leukemia, prolymphocytic, t-cell",
+      "leukemia, promyelocytic, acute",
       "leukemia, t-cell"
     ]
   },
@@ -3847,9 +4155,16 @@
       "Liver Cirrhosis, Alcoholic",
       "Liver Failure",
       "NASH - Nonalcoholic Steatohepatitis",
-      "Nonalcoholic Steatohepatitis"
+      "Nonalcoholic Steatohepatitis",
+      "compensated cirrhosis",
+      "hepatic cirrhosis",
+      "liver cirrhosis"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "hepatitis b",
+      "hepatitis b, chronic",
+      "liver cirrhosis"
+    ]
   },
   "Lung Cancer": {
     "conditions": [
@@ -4149,7 +4464,11 @@
       "Triple-hit Lymphoma (THL)",
       "Tumor or Lymphoma",
       "Tumors Characterized by Genetic Alterations in Anaplastic Lymphoma Kinase (ALK)",
-      "Untreated CD20-positive Large B-cell Lymphoma"
+      "Untreated CD20-positive Large B-cell Lymphoma",
+      "classic follicular lymphoma",
+      "large-cell lymphoma",
+      "non hodgkins lymphoma",
+      "non-hodgkin lymphoma, diffuse large b cell lymphoma, follicular lymphoma, mantle cell lymphoma, marginal zone lymphoma"
     ],
     "mesh_terms": [
       "lymphoma",
@@ -4163,6 +4482,7 @@
       "lymphoma, t-cell",
       "lymphoma, t-cell, cutaneous",
       "lymphoma, t-cell, peripheral",
+      "lymphoproliferative disorders",
       "plasmablastic lymphoma"
     ]
   },
@@ -4375,11 +4695,15 @@
       "Uveal Melanoma, Recurrent",
       "V600-mutated BRAF Metastatic Melanoma",
       "V600-mutated BRAF Unresectable Melanoma",
-      "V600EBRAF-mutated Metastatic Melanoma"
+      "V600EBRAF-mutated Metastatic Melanoma",
+      "refractory melanoma",
+      "relapsed, refractory melanoma",
+      "untreated melanoma"
     ],
     "mesh_terms": [
       "eye neoplasms",
-      "melanoma"
+      "melanoma",
+      "uveal neoplasms"
     ]
   },
   "Merkel Cell Carcinoma": {
@@ -4398,7 +4722,8 @@
       "Stage IIIA Merkel Cell Carcinoma AJCC v8",
       "Stage IIIB Merkel Cell Carcinoma AJCC v8",
       "Stage IV Merkel Cell Carcinoma AJCC v7",
-      "Unresectable Clinical Stage III Merkel Cell Carcinoma AJCC v8"
+      "Unresectable Clinical Stage III Merkel Cell Carcinoma AJCC v8",
+      "metastatic melanoma and merkel cell carcinoma"
     ],
     "mesh_terms": [
       "carcinoma, merkel cell"
@@ -4426,11 +4751,13 @@
       "Pleural Mesothelioma Malignant",
       "Pleural Mesothelioma Malignant Advanced",
       "Pleural Mesotheliomas",
-      "Unresectable Pleural Mesothelioma"
+      "Unresectable Pleural Mesothelioma",
+      "malignant mesothelioma, advanced"
     ],
     "mesh_terms": [
       "mesothelioma",
-      "pleural effusion, malignant"
+      "pleural effusion, malignant",
+      "pleural neoplasms"
     ]
   },
   "Migraine": {
@@ -4460,10 +4787,14 @@
       "Pediatric Migraine",
       "Treatment for Prevention of Chronic Migraine",
       "Trigger Induced Migraine",
-      "Vestibular Migraine"
+      "Vestibular Migraine",
+      "headache"
     ],
     "mesh_terms": [
-      "migraine disorders"
+      "headache",
+      "migraine disorders",
+      "migraine with aura",
+      "migraine without aura"
     ]
   },
   "Multiple Myeloma / Plasma Cell Neoplasm": {
@@ -4507,11 +4838,13 @@
       "Relapsed/Refractory Multiple Myeloma",
       "Smoldering Multiple Myeloma",
       "Solitary Bone Plasmacytoma",
-      "Solitary Osseous Plasmacytoma"
+      "Solitary Osseous Plasmacytoma",
+      "multiple myeloma stage i"
     ],
     "mesh_terms": [
       "leukemia, plasma cell",
       "multiple myeloma",
+      "plasmacytoma",
       "smoldering multiple myeloma"
     ]
   },
@@ -4551,7 +4884,8 @@
       "de Novo Myelodysplastic Syndrome"
     ],
     "mesh_terms": [
-      "bone marrow neoplasms"
+      "bone marrow neoplasms",
+      "myelodysplastic syndromes"
     ]
   },
   "Myeloproliferative Neoplasm": {
@@ -4598,10 +4932,16 @@
       "Postessential Thrombocythemia (Post-ET) Myelofibrosis",
       "Primary Myelofibrosis",
       "Primary Myelofibrosis (PMF)",
-      "Primary Myelofibrosis; Post-polycythemia Vera Myelofibrosis; Post-essential Thrombocythemia Myelofibrosis"
+      "Primary Myelofibrosis; Post-polycythemia Vera Myelofibrosis; Post-essential Thrombocythemia Myelofibrosis",
+      "polycytemia vera",
+      "polycythemia vera (pv)",
+      "secondary myelofibrosis"
     ],
     "mesh_terms": [
-      "polycythemia vera"
+      "myeloproliferative disorders",
+      "polycythemia vera",
+      "primary myelofibrosis",
+      "thrombocythemia, essential"
     ]
   },
   "Neuroendocrine Tumor / Carcinoid Tumor": {
@@ -4662,12 +5002,17 @@
       "Refractory Digestive System Neuroendocrine Neoplasm",
       "Small Cell Neuroendocrine Carcinoma",
       "Small Cell Neuroendocrine Carcinoma of Bladder",
-      "Well-Differentiated Neuroendocrine Carcinoma"
+      "Well-Differentiated Neuroendocrine Carcinoma",
+      "gastroenteropancreatic neuroendocrine tumor of the pulmonary ot gastroenteropancreatic system",
+      "neuroendocrine (ne) tumors",
+      "neuroendocrine carcinoma of the lung and thymus"
     ],
     "mesh_terms": [
       "adenoma, islet cell",
+      "carcinoid heart disease",
       "carcinoid tumor",
       "carcinoma, neuroendocrine",
+      "malignant carcinoid syndrome",
       "multiple endocrine neoplasia type 1",
       "neuroendocrine tumors"
     ]
@@ -4682,7 +5027,9 @@
       "Central Nervous System Metastases",
       "Ganglioneuroblastoma of Central Nervous System"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "central nervous system diseases"
+    ]
   },
   "Non-Small Cell Lung Cancer": {
     "conditions": [
@@ -4948,7 +5295,11 @@
       "Stage IV Non-small Cell Lung Cancer",
       "Stage IV or Recurrent Non-Small Cell Lung Cancer",
       "Unresectable Non-small Cell Lung Cancer (NSCLC)",
-      "Untreated Advanced NSCLC"
+      "Untreated Advanced NSCLC",
+      "advanced/metastatic non-small cell lung cancer",
+      "metastatic or incurable non-small cell lung cancer",
+      "non-small-cell lung cancer (nsclc)",
+      "non-squamous, non-small cell lung cancer"
     ],
     "mesh_terms": [
       "carcinoma, non-small-cell lung"
@@ -4969,10 +5320,17 @@
       "Overweight or Obesity",
       "PCSK1 Deficiency Obesity",
       "POMC Deficiency Obesity",
-      "Pro-opiomelanocortin (POMC) Deficiency Obesity"
+      "Pro-opiomelanocortin (POMC) Deficiency Obesity",
+      "healthy volunteers overweight",
+      "overweight",
+      "overweight (without type 2 diabetes) with weight-related comorbidities",
+      "overweight subject",
+      "prader-willi syndrome"
     ],
     "mesh_terms": [
-      "obesity"
+      "obesity",
+      "overweight",
+      "prader-willi syndrome"
     ]
   },
   "Ophthalmic Disease": {
@@ -5037,7 +5395,14 @@
       "Wet Age-related Macular Degeneration (wAMD)",
       "Wet Macular Degeneration"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "diabetic retinopathy",
+      "macular degeneration",
+      "macular edema",
+      "retinal vein occlusion",
+      "retinopathy of prematurity",
+      "wet macular degeneration"
+    ]
   },
   "Other / Unclassified": {
     "conditions": [
@@ -5839,31 +6204,148 @@
       "Wheezing",
       "YAP1 or TAZ Gene Fusions",
       "Zanzalintinib",
+      "acquired immunodeficiency syndrome",
+      "active non-segmental vitiligo",
+      "active nonsegmental vitiligo",
+      "anal hpv infection",
+      "arthritis, juvenile",
       "ccRCC",
+      "chronic hcv infection",
+      "chronic obstructive pulmonary disease copd",
+      "chronic obstructive pulmonary disease exacerbation",
+      "chronic obstructive pulmonary disease, copd",
+      "cmv infection",
+      "continuous renal replacement therapy (crrt)",
       "ctDNA",
+      "digestive system disorders",
+      "functional gastrointestinal disorders",
+      "gastric acid-related diseases",
+      "gastrointestinal discomfort",
+      "gonadotrophin-releasing hormone (gnrh)",
+      "gonadotrophin-releasing hormone agonist (gnrha)",
+      "healthcare associated infection",
+      "helicobacter pylori infection",
+      "hepatic impaired",
+      "hepatic; functional disturbance",
+      "hiv",
+      "hiv-1-infection",
+      "hiv-infection/aids",
+      "hpv infection",
+      "human immunodeficiency virus",
+      "immune system and related disorders",
+      "infection, human immunodeficiency virus",
+      "infections",
+      "lichen planus: cutaneous lichen planus, mucosal lichen planus and lichen planopilaris",
+      "lupus",
       "mCRC",
       "mCRPC",
+      "mild and moderate hepatic impairment",
+      "multiple sclerosis, primary progressive",
+      "multiple sclerosis, relapsing",
+      "multiple sclerosis, relapsing forms",
+      "multiple sclerosis, secondary progressive",
       "nAMD",
+      "neuroblastoma recurrent",
+      "nosocomial infection",
+      "onset juvenile idiopathic arthritis",
       "p16 Positive Neoplastic Cells Present",
       "p16 Positive SCCHN",
       "p53abn",
       "pMMR",
+      "pediatric all",
+      "pediatric disorder",
+      "plasmodium falciparum infection",
+      "polyarticular course juvenile idiopathic arthritis",
+      "postmenopausal disorder",
+      "progressive multiple sclerosis (pms)",
+      "pseudomonas aeruginosa infection",
+      "pseudomonas infection",
+      "relapse remitting multiple sclerosis",
+      "relapsing forms of multiple sclerosis",
+      "relapsing multiple sclerorsis",
+      "relapsing-remitting multiple sclerosis (rrms)",
+      "respiratory",
       "rrCLL",
       "rrDLBCL",
       "rrMM",
+      "rsv infection",
+      "sedation in the upper gastrointestinal endoscopy",
+      "stable nonsegmental vitiligo",
+      "surgical site infection",
+      "systemic juvenile idiopathic arthritis",
       "t(11;14) Positive",
       "t(9;22)",
+      "upper respiratory infections",
+      "urinary tract infection complicated",
+      "urinary tract infection symptomatic",
       "wAMD",
       "β-catenin"
     ],
     "mesh_terms": [
+      "acquired immunodeficiency syndrome",
+      "acute-phase reaction",
+      "arthritis, juvenile",
+      "brain injury, chronic",
+      "bronchitis, chronic",
+      "castleman disease",
+      "cell transformation, neoplastic",
+      "choroidal neovascularization",
+      "death",
+      "depressive disorder, treatment-resistant",
+      "digestive system diseases",
+      "epstein-barr virus infections",
+      "esthesioneuroblastoma, olfactory",
+      "factor v deficiency",
+      "ganglioneuroblastoma",
+      "gastrointestinal diseases",
+      "genetic diseases, inborn",
+      "gestational trophoblastic disease",
+      "giant cell arteritis",
+      "glomerulonephritis, membranous",
+      "hemophilia a",
+      "hepatic insufficiency",
+      "hepatic veno-occlusive disease",
       "hepatoblastoma",
+      "hidradenitis suppurativa",
+      "histiocytic disorders, malignant",
+      "hiv infections",
+      "hot flashes",
+      "immune system diseases",
+      "infection",
+      "infertility",
+      "infertility, female",
+      "intestinal diseases",
+      "leukoplakia, oral",
+      "lichen planus",
+      "lupus erythematosus, systemic",
+      "lupus nephritis",
+      "male urogenital diseases",
+      "monoclonal gammopathy of undetermined significance",
+      "multiple sclerosis",
+      "multiple sclerosis, chronic progressive",
+      "multiple sclerosis, relapsing-remitting",
       "mycosis fungoides",
+      "neoplasm, residual",
+      "neoplasms, hormone-dependent",
       "neuroblastoma",
       "neurofibroma",
       "neurofibroma, plexiform",
+      "neurofibromatoses",
+      "osteoporosis, postmenopausal",
+      "ovarian diseases",
+      "pediatric obesity",
       "pheochromocytoma",
       "pulmonary disease, chronic obstructive",
+      "renal insufficiency",
+      "retinal detachment",
+      "retinal diseases",
+      "severe acute respiratory syndrome",
+      "sleep wake disorders",
+      "temporomandibular joint disorders",
+      "trigeminal neuralgia",
+      "urologic diseases",
+      "vitiligo",
+      "von hippel-lindau disease",
       "waldenstrom macroglobulinemia"
     ]
   },
@@ -6024,12 +6506,19 @@
       "Third-line or Later (3L+) Platinum-resistant Ovarian Cancer (PROC)",
       "Unresectable Fallopian Tube Carcinoma",
       "Unresectable Ovarian Carcinoma",
-      "Unresectable Primary Peritoneal Carcinoma"
+      "Unresectable Primary Peritoneal Carcinoma",
+      "advanced high-grade epithelial ovarian cancer",
+      "high grade ovarian cancer",
+      "high grade serious or endometrioid carcinoma of the ovary, fallopian tube, or primary peritoneal cancer",
+      "platinum-sensitive relapsed ovarian cancer",
+      "recurrent epithelial ovarian, fallopian or peritoneal carcinoma"
     ],
     "mesh_terms": [
+      "carcinoma, endometrioid",
       "carcinoma, ovarian epithelial",
       "cystadenocarcinoma, serous",
       "fallopian tube neoplasms",
+      "granulosa cell tumor",
       "ovarian neoplasms"
     ]
   },
@@ -6130,10 +6619,14 @@
       "Unresectable Pancreatic Cancer",
       "Unresectable Pancreatic Carcinoma",
       "Unresectable Pancreatic Ductal Adenocarcinoma",
-      "Untreated Metastatic Pancreatic Ductal Adenocarcinoma"
+      "Untreated Metastatic Pancreatic Ductal Adenocarcinoma",
+      "first-line treatment of advanced pancreatic cancer",
+      "islet cell carcinoma",
+      "pancreatic cancer harboring nrg1 fusion"
     ],
     "mesh_terms": [
       "carcinoma, acinar cell",
+      "carcinoma, islet cell",
       "carcinoma, pancreatic ductal",
       "pancreatic intraductal neoplasms",
       "pancreatic neoplasms"
@@ -6321,6 +6814,7 @@
       "mCRPC (Metastatic Castration-resistant Prostate Cancer)"
     ],
     "mesh_terms": [
+      "prostatic diseases",
       "prostatic neoplasms",
       "prostatic neoplasms, castration-resistant"
     ]
@@ -6333,16 +6827,37 @@
       "Prurigo Nodularis",
       "Pruritus"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "prurigo",
+      "pruritus"
+    ]
   },
   "Psoriasis": {
     "conditions": [
       "Chronic Plaque Psoriasis",
       "Plaque Psoriasis",
       "Psoriasis",
-      "Psoriasis Vulgaris"
+      "Psoriasis Vulgaris",
+      "chronic plaque-type psoriasis",
+      "chronic scalp psoriasis",
+      "moderate plaque psoriasis",
+      "moderate to severe chronic plaque psoriasis",
+      "moderate to severe chronic plaque-type psoriasis",
+      "moderate to severe nail psoriasis",
+      "moderate to severe palmoplantar psoriasis",
+      "moderate to severe plaque psoriasis",
+      "moderate to severe plaque-type psoriasis",
+      "plaque-type psoriasis",
+      "psoriasis arthropatica",
+      "psoriasis, plaque-type psoriasis",
+      "psoriasis-type psoriasis",
+      "pustular psoriasis",
+      "pustular; psoriasis, palmaris et plantaris",
+      "scalp psoriasis"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "psoriasis"
+    ]
   },
   "Respiratory Disease": {
     "conditions": [
@@ -6352,15 +6867,22 @@
       "Bronchiolitis Obliterans",
       "Bronchiolitis Obliterans Syndrome"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "bronchiolitis obliterans"
+    ]
   },
   "Rheumatoid Arthritis": {
     "conditions": [
       "Active Refractory Rheumatoid Arthritis",
       "Rheumatoid Arthritis",
-      "Rheumatoid Arthritis (RA)"
+      "Rheumatoid Arthritis (RA)",
+      "arthritis, rheumatoid",
+      "laymen terminology level of oral contraceptive in blood, oral contraceptive, rheumatoid arthritis, drug -drug interaction",
+      "scientific terminology rheumatoid arthritis, healthy female volunteers, pharmacokinetics, oral contraceptive, drug-drug interaction"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "arthritis, rheumatoid"
+    ]
   },
   "Sarcoma / Soft Tissue or Bone Tumor": {
     "conditions": [
@@ -6561,19 +7083,30 @@
     ],
     "mesh_terms": [
       "chondrosarcoma",
+      "chondrosarcoma, mesenchymal",
       "chordoma",
+      "dermatofibrosarcoma",
+      "fibromatosis, aggressive",
       "fibromatosis, plantar",
+      "fibrosarcoma",
       "gliosarcoma",
+      "histiocytoma, malignant fibrous",
       "leiomyosarcoma",
       "liposarcoma",
       "liposarcoma, myxoid",
+      "neoplasms, connective and soft tissue",
       "neurofibromatosis 1",
+      "neurofibromatosis 2",
       "neurofibrosarcoma",
       "osteosarcoma",
       "rhabdomyosarcoma",
       "sarcoma",
+      "sarcoma 180",
+      "sarcoma 37",
       "sarcoma, alveolar soft part",
+      "sarcoma, clear cell",
       "sarcoma, ewing",
+      "sarcoma, myeloid",
       "sarcoma, synovial"
     ]
   },
@@ -6583,7 +7116,9 @@
       "Sickle Cell Anemia",
       "Sickle Cell Disease"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "anemia, sickle cell"
+    ]
   },
   "Small Cell Lung Cancer": {
     "conditions": [
@@ -6620,7 +7155,8 @@
       "Small Cell Lung Carcinoma Extensive Disease",
       "Small Cell Lung Extensive Stage",
       "Thoracic Neoplasms, Lung Diseases, Small Cell Lung Carcinoma",
-      "Transformed Small Cell Lung Cancer"
+      "Transformed Small Cell Lung Cancer",
+      "carcinoma, small-cell lung"
     ],
     "mesh_terms": [
       "small cell lung carcinoma"
@@ -6632,7 +7168,9 @@
       "Axial Spondylarthritis (axSpA)",
       "Spondylarthritis"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "spondylarthritis"
+    ]
   },
   "Stroke / Cerebrovascular Disease": {
     "conditions": [
@@ -6655,7 +7193,9 @@
       "Pelvic Pain",
       "Recurrent Angioedema"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "edema"
+    ]
   },
   "Systemic Mastocytosis": {
     "conditions": [
@@ -6674,9 +7214,13 @@
       "Diffuse Cutaneous Systemic Sclerosis",
       "Scleroderma, Systemic",
       "Systemic Scleroderma",
-      "Systemic Sclerosis"
+      "Systemic Sclerosis",
+      "scleroderma",
+      "systemic sclerosis, scleroderma"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "scleroderma, systemic"
+    ]
   },
   "T-Cell / NK-Cell Lymphoma": {
     "conditions": [
@@ -6746,6 +7290,7 @@
     ],
     "mesh_terms": [
       "enteropathy-associated t-cell lymphoma",
+      "leukemia-lymphoma, adult t-cell",
       "lymphomatoid papulosis",
       "sezary syndrome"
     ]
@@ -6757,10 +7302,16 @@
       "Beta-Thalassemia Major",
       "Beta-thalassemia",
       "Thalassemia",
+      "beta thalassemia intermedia",
+      "beta thalassemia major",
+      "healthy volunteers sickle cell disease, thalassemia",
       "β-Thalassemia",
       "β-thalassemia Major"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "beta-thalassemia",
+      "thalassemia"
+    ]
   },
   "Thymic Cancer": {
     "conditions": [
@@ -6774,7 +7325,9 @@
       "Thymoma Type B3",
       "Untreated Advanced or Recurrent Thymic Carcinomas"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "thymoma"
+    ]
   },
   "Thyroid Cancer": {
     "conditions": [
@@ -6822,11 +7375,14 @@
       "Thyroid Gland Squamous Cell Carcinoma",
       "Thyroid Neoplasm",
       "Thyroid Neoplasms",
-      "Unresectable Thyroid Gland Carcinoma"
+      "Unresectable Thyroid Gland Carcinoma",
+      "thyroid associated ophthalmopathies"
     ],
     "mesh_terms": [
       "carcinoma, medullary",
+      "thyroid cancer, papillary",
       "thyroid carcinoma, anaplastic",
+      "thyroid diseases",
       "thyroid neoplasms"
     ]
   },
@@ -6863,7 +7419,9 @@
       "Transplant-Associated Thrombotic Microangiopathy",
       "Transplants and Implants"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "postoperative complications"
+    ]
   },
   "Treatment Adverse Event / Toxicity": {
     "conditions": [
@@ -6878,7 +7436,9 @@
       "Neurotoxicity Syndromes",
       "Toxicity, Drug"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "neurotoxicity syndromes"
+    ]
   },
   "Urothelial / Bladder Cancer": {
     "conditions": [
@@ -7059,8 +7619,11 @@
       "Urothelial/Bladder Cancer, Nos"
     ],
     "mesh_terms": [
+      "carcinoma in situ",
       "carcinoma, transitional cell",
+      "muscle neoplasms",
       "ureteral neoplasms",
+      "urinary bladder diseases",
       "urinary bladder neoplasms"
     ]
   },
@@ -7073,7 +7636,9 @@
       "Chronic Urticaria (CU): Chronic Inducible Urticaria (CINDU) and Chronic Spontaneous Urticaria (CSU)",
       "Cold Urticaria"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "urticaria"
+    ]
   },
   "Vaginal / Vulvar Cancer": {
     "conditions": [
@@ -7088,9 +7653,13 @@
       "Vaginal Cancer",
       "Vulvar Cancer",
       "Vulvar Carcinoma",
-      "Vulvar Squamous Cell Carcinoma"
+      "Vulvar Squamous Cell Carcinoma",
+      "vaginal atrophy in breast cancer patients"
     ],
-    "mesh_terms": []
+    "mesh_terms": [
+      "vaginal neoplasms",
+      "vulvar neoplasms"
+    ]
   },
   "Vascular Malformation": {
     "conditions": [

@@ -27,7 +27,7 @@ Per-attribute semantics (reconstructed into tabs / tabs_exclude / disease_areas
     Drug Pricing, Market Access, Sponsors, Trial Design, Endpoints, Outcomes,
     Scores, PRO Overview, Trial Groups, Safety, Real World Safety
   disease_area values = top-level keys of catalogs/bucket_catalog.json
-  drug_class values   = atc_class_name (see catalogs/condition_sponsor_values.json)
+  drug_class values   = public.drug_classes.drug_class (see catalogs/condition_sponsor_values.json)
 
 Add a user (direct SQL against the `auth` DB):
   INSERT INTO user_creds (username, password, display_name)

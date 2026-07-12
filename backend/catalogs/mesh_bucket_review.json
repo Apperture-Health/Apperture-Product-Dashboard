@@ -1,0 +1,966 @@
+{
+  "22q11 deletion syndrome": [
+    "Biomarker / Molecular Alteration:1",
+    "Other / Unclassified:1"
+  ],
+  "achondroplasia": [
+    "Achondroplasia:1"
+  ],
+  "acne vulgaris": [],
+  "acromegaly": [],
+  "acute chest syndrome": [
+    "Other / Unclassified:1"
+  ],
+  "acute coronary syndrome": [],
+  "acute generalized exanthematous pustulosis": [],
+  "acute kidney injury": [],
+  "acute lung injury": [],
+  "acute pain": [],
+  "acute radiation syndrome": [
+    "Ophthalmic Disease:1",
+    "Other / Unclassified:1"
+  ],
+  "acute-on-chronic liver failure": [
+    "Liver Disease:1"
+  ],
+  "adnexal diseases": [
+    "Gynecologic Condition:1"
+  ],
+  "adrenal gland diseases": [
+    "Other / Unclassified:1"
+  ],
+  "affective disorders, psychotic": [],
+  "aicardi syndrome": [],
+  "airway obstruction": [
+    "Respiratory Disease:1"
+  ],
+  "albuminuria": [],
+  "alcoholic neuropathy": [
+    "Other / Unclassified:1"
+  ],
+  "alcoholism": [],
+  "alert fatigue, health personnel": [],
+  "alopecia": [
+    "Alopecia:1"
+  ],
+  "alopecia areata": [
+    "Alopecia:1"
+  ],
+  "alveolar bone loss": [],
+  "alveolitis, extrinsic allergic": [],
+  "amyloid neuropathies, familial": [],
+  "amyloidosis, familial": [],
+  "amyotrophic lateral sclerosis": [
+    "Amyotrophic Lateral Sclerosis:1"
+  ],
+  "anaphylaxis": [],
+  "anemia": [
+    "Blood Disorder / Cytopenia:1"
+  ],
+  "anemia, aplastic": [
+    "Bone Marrow Failure / Aplastic Anemia:1"
+  ],
+  "anemia, iron-deficiency": [],
+  "anemia, refractory": [
+    "Blood Disorder / Cytopenia:1"
+  ],
+  "anemia, refractory, with excess of blasts": [
+    "Myelodysplastic Syndrome:2",
+    "Blood Disorder / Cytopenia:1",
+    "Clinical / Staging Concept:1"
+  ],
+  "angina, stable": [
+    "Other / Unclassified:1"
+  ],
+  "angioedema": [
+    "Symptom / Clinical Finding:1"
+  ],
+  "ankle injuries": [],
+  "anti-neutrophil cytoplasmic antibody-associated vasculitis": [],
+  "anxiety disorders": [],
+  "aortic diseases": [],
+  "aortic valve insufficiency": [],
+  "aortic valve stenosis": [],
+  "arteriosclerosis": [],
+  "arteriovenous malformations": [
+    "Vascular Malformation:1"
+  ],
+  "arthritis": [],
+  "arthritis, psoriatic": [
+    "Other / Unclassified:1"
+  ],
+  "ascites": [
+    "Symptom / Clinical Finding:1"
+  ],
+  "aspergillosis": [],
+  "aspergillosis, allergic bronchopulmonary": [
+    "Allergic Disease:1"
+  ],
+  "asthma, exercise-induced": [
+    "Asthma:1"
+  ],
+  "atherosclerosis": [],
+  "athletic injuries": [],
+  "atrial fibrillation": [],
+  "atrial flutter": [],
+  "atrophy": [],
+  "atypical hemolytic uremic syndrome": [],
+  "autism spectrum disorder": [],
+  "autistic disorder": [],
+  "back pain": [],
+  "bacteremia": [],
+  "bacterial infections": [],
+  "bardet-biedl syndrome": [],
+  "behcet syndrome": [],
+  "bipolar disorder": [],
+  "blood coagulation disorders": [
+    "Blood Disorder / Cytopenia:1"
+  ],
+  "blood platelet disorders": [
+    "Blood Disorder / Cytopenia:1"
+  ],
+  "bone diseases": [
+    "Bone / Bone Marrow Disorder:1"
+  ],
+  "bone marrow diseases": [
+    "Clinical / Staging Concept:6",
+    "Bone / Bone Marrow Disorder:2",
+    "Transplantation / Transplant Complication:2"
+  ],
+  "brain damage, chronic": [],
+  "brain diseases": [
+    "Neurologic Disease:1"
+  ],
+  "breast diseases": [
+    "Other / Unclassified:1"
+  ],
+  "bronchial diseases": [
+    "Other / Unclassified:1",
+    "Respiratory Disease:1"
+  ],
+  "bronchiectasis": [],
+  "bronchitis": [
+    "Chronic Obstructive Pulmonary Disease:1",
+    "Other / Unclassified:1"
+  ],
+  "burns": [],
+  "calcinosis": [],
+  "calcium metabolism disorders": [],
+  "cancer pain": [],
+  "cardiac output, high": [],
+  "cardiac tamponade": [
+    "Transplantation / Transplant Complication:1"
+  ],
+  "cardiomegaly": [
+    "Cardiovascular Disease:1"
+  ],
+  "cardiomyopathies": [
+    "Cardiovascular Disease:1"
+  ],
+  "cardiomyopathy, hypertrophic": [],
+  "cardiovascular diseases": [],
+  "cartilage diseases": [],
+  "cataract": [
+    "Ophthalmic Disease:1"
+  ],
+  "catheter-related infections": [],
+  "celiac disease": [],
+  "central serous chorioretinopathy": [
+    "Ophthalmic Disease:1"
+  ],
+  "cerebral arterial diseases": [],
+  "cerebrovascular disorders": [
+    "Stroke / Cerebrovascular Disease:1"
+  ],
+  "chagas disease": [],
+  "chemical and drug induced liver injury": [],
+  "child development disorders, pervasive": [],
+  "cholangitis": [],
+  "cholangitis, sclerosing": [],
+  "cholestasis": [],
+  "cholestasis, intrahepatic": [],
+  "choline deficiency": [],
+  "chromosome deletion": [
+    "Other / Unclassified:1"
+  ],
+  "chronic pain": [
+    "Symptom / Clinical Finding:1"
+  ],
+  "chronic traumatic encephalopathy": [
+    "Other / Unclassified:1"
+  ],
+  "clinical deterioration": [
+    "Clinical Pharmacology / Study Design:1",
+    "Other / Unclassified:1"
+  ],
+  "clostridium infections": [],
+  "cognitive dysfunction": [
+    "Alzheimer’s Disease / Dementia:2",
+    "Other / Unclassified:2"
+  ],
+  "colitis": [
+    "Inflammatory Bowel Disease:1"
+  ],
+  "colles' fracture": [],
+  "colonic diseases": [
+    "Other / Unclassified:1"
+  ],
+  "common cold": [],
+  "common variable immunodeficiency": [],
+  "congenital disorders of glycosylation": [],
+  "constipation": [],
+  "corneal diseases": [
+    "Other / Unclassified:1"
+  ],
+  "corneal endothelial cell loss": [],
+  "corneal neovascularization": [
+    "Other / Unclassified:1"
+  ],
+  "coronary artery disease": [],
+  "coronary disease": [],
+  "coronavirus infections": [
+    "COVID-19:1"
+  ],
+  "cough": [],
+  "critical illness": [],
+  "cryopyrin-associated periodic syndromes": [],
+  "cushing syndrome": [],
+  "cystitis, interstitial": [
+    "Other / Unclassified:1"
+  ],
+  "cytochrome-c oxidase deficiency": [
+    "Other / Unclassified:1"
+  ],
+  "delayed emergence from anesthesia": [
+    "Clinical / Staging Concept:1"
+  ],
+  "delayed graft function": [],
+  "delirium": [],
+  "demyelinating autoimmune diseases, cns": [
+    "Neurologic Disease:1"
+  ],
+  "dental caries": [],
+  "dentin sensitivity": [],
+  "depression, postpartum": [],
+  "depressive disorder": [],
+  "depressive disorder, major": [
+    "Other / Unclassified:1"
+  ],
+  "dermatitis": [
+    "Other / Unclassified:1"
+  ],
+  "dermatitis, allergic contact": [
+    "Allergic Disease:1"
+  ],
+  "dermatomyositis": [],
+  "desmoid tumors": [],
+  "diabetes mellitus, lipoatrophic": [],
+  "diabetes mellitus, type 2": [],
+  "diabetic foot": [
+    "Other / Unclassified:1"
+  ],
+  "diabetic nephropathies": [],
+  "diabetic neuropathies": [],
+  "diarrhea": [],
+  "digeorge syndrome": [],
+  "disease progression": [
+    "Chronic Lymphocytic Leukemia / Small Lymphocytic Lymphoma:1",
+    "Other / Unclassified:1"
+  ],
+  "disease resistance": [
+    "Biomarker / Molecular Alteration:1",
+    "Other / Unclassified:1"
+  ],
+  "diverticulum, colon": [
+    "Other / Unclassified:1"
+  ],
+  "drug overdose": [],
+  "drug resistant epilepsy": [],
+  "drug-related side effects and adverse reactions": [
+    "Clinical Pharmacology / Study Design:10",
+    "Treatment Adverse Event / Toxicity:5",
+    "Other / Unclassified:2"
+  ],
+  "dry eye syndromes": [],
+  "dumping syndrome": [],
+  "duodenitis": [
+    "Other / Unclassified:1"
+  ],
+  "dyslipidemias": [],
+  "dysmenorrhea": [],
+  "edema, cardiac": [],
+  "embolism, cholesterol": [],
+  "embolism, fat": [],
+  "embryo loss": [
+    "Other / Unclassified:1"
+  ],
+  "encephalitis": [],
+  "encephalitis, japanese": [],
+  "end stage liver disease": [
+    "Liver Disease:1"
+  ],
+  "endocrine system diseases": [
+    "Other / Unclassified:1"
+  ],
+  "enterocolitis, neutropenic": [
+    "Other / Unclassified:1"
+  ],
+  "eosinophilia": [
+    "Other / Unclassified:1"
+  ],
+  "epilepsies, partial": [
+    "Other / Unclassified:1"
+  ],
+  "epilepsy": [],
+  "epilepsy, absence": [],
+  "epilepsy, complex partial": [],
+  "epilepsy, tonic-clonic": [],
+  "epileptic syndromes": [],
+  "erdheim-chester disease": [
+    "Other / Unclassified:1"
+  ],
+  "extensively drug-resistant tuberculosis": [
+    "Biomarker / Molecular Alteration:1"
+  ],
+  "eye diseases": [
+    "Ophthalmic Disease:1",
+    "Other / Unclassified:1"
+  ],
+  "facial asymmetry": [],
+  "facial pain": [
+    "Symptom / Clinical Finding:1"
+  ],
+  "fallopian tube diseases": [
+    "Other / Unclassified:1"
+  ],
+  "fatigue": [
+    "Symptom / Clinical Finding:1"
+  ],
+  "febrile neutropenia": [
+    "Blood Disorder / Cytopenia:1"
+  ],
+  "female urogenital diseases": [
+    "Gynecologic Condition:1"
+  ],
+  "female urogenital diseases and pregnancy complications": [
+    "Gynecologic Condition:1"
+  ],
+  "fever": [
+    "Symptom / Clinical Finding:1"
+  ],
+  "fibromyalgia": [
+    "Other / Unclassified:1"
+  ],
+  "fibrosis": [
+    "Other / Unclassified:1"
+  ],
+  "food hypersensitivity": [
+    "Allergic Disease:1",
+    "Other / Unclassified:1"
+  ],
+  "fractures, bone": [],
+  "fractures, open": [],
+  "fragile x syndrome": [],
+  "friedreich ataxia": [],
+  "frontotemporal dementia": [
+    "Alzheimer’s Disease / Dementia:1"
+  ],
+  "frontotemporal lobar degeneration": [
+    "Other / Unclassified:1"
+  ],
+  "gata2 deficiency": [
+    "Obesity:6",
+    "Other / Unclassified:6",
+    "Biomarker / Molecular Alteration:3"
+  ],
+  "gaucher disease": [],
+  "genital diseases, female": [
+    "Other / Unclassified:1"
+  ],
+  "genital diseases, male": [
+    "Other / Unclassified:1"
+  ],
+  "geographic atrophy": [],
+  "gigantism": [],
+  "glaucoma, neovascular": [
+    "Ophthalmic Disease:1",
+    "Other / Unclassified:1"
+  ],
+  "glomerulonephritis, iga": [],
+  "glomerulosclerosis, focal segmental": [
+    "Other / Unclassified:1"
+  ],
+  "glucose metabolism disorders": [],
+  "gonadal disorders": [
+    "Other / Unclassified:1"
+  ],
+  "gram-positive bacterial infections": [],
+  "granuloma annulare": [
+    "Other / Unclassified:1"
+  ],
+  "granulomatous disease, chronic": [
+    "Vasculitis:1"
+  ],
+  "graves ophthalmopathy": [],
+  "growth disorders": [
+    "Other / Unclassified:1"
+  ],
+  "hair diseases": [],
+  "heart defects, congenital": [],
+  "heart diseases": [],
+  "heart failure": [
+    "Other / Unclassified:1"
+  ],
+  "heart failure, systolic": [],
+  "heart valve diseases": [],
+  "heartburn": [],
+  "hemoglobin c disease": [
+    "Other / Unclassified:1"
+  ],
+  "hemoglobinopathies": [
+    "Other / Unclassified:1"
+  ],
+  "hemoglobinuria, paroxysmal": [],
+  "hemorrhage": [
+    "Other / Unclassified:1"
+  ],
+  "hemorrhagic disorders": [
+    "Other / Unclassified:1"
+  ],
+  "hepatitis": [],
+  "hepatitis c": [],
+  "hepatitis c, chronic": [],
+  "hepatitis d": [
+    "Liver Disease:1"
+  ],
+  "hepatitis d, chronic": [
+    "Liver Disease:1"
+  ],
+  "hepatitis, alcoholic": [
+    "Liver Disease:1"
+  ],
+  "hepatitis, autoimmune": [],
+  "hereditary autoinflammatory diseases": [
+    "Other / Unclassified:1"
+  ],
+  "histiocytosis": [
+    "Other / Unclassified:1"
+  ],
+  "histiocytosis, non-langerhans-cell": [
+    "Hematologic Malignancy:1"
+  ],
+  "hiv enteropathy": [],
+  "htlv-i infections": [
+    "Other / Unclassified:1"
+  ],
+  "hydrocephalus, normal pressure": [
+    "Biomarker / Molecular Alteration:1"
+  ],
+  "hyperargininemia": [],
+  "hypercalcemia": [
+    "Cancer / Neoplasm:1"
+  ],
+  "hypercholesterolemia": [],
+  "hypereosinophilic syndrome": [
+    "Other / Unclassified:1"
+  ],
+  "hypergammaglobulinemia": [
+    "Other / Unclassified:1"
+  ],
+  "hyperglycemia": [],
+  "hyperhidrosis": [],
+  "hyperkalemia": [],
+  "hyperlipidemia, familial combined": [],
+  "hyperlipidemias": [],
+  "hyperparathyroidism, secondary": [],
+  "hyperphagia": [],
+  "hyperphosphatemia": [],
+  "hyperplasia": [
+    "Clinical / Staging Concept:1"
+  ],
+  "hypersensitivity": [
+    "Dermatologic / Atopic Condition:1",
+    "Other / Unclassified:1"
+  ],
+  "hypersensitivity, immediate": [
+    "Other / Unclassified:1"
+  ],
+  "hypertension": [],
+  "hypertension, pulmonary": [
+    "Other / Unclassified:1"
+  ],
+  "hypertriglyceridemia": [],
+  "hypoglycemia": [],
+  "hypogonadism": [],
+  "hypoparathyroidism": [],
+  "hypospadias": [],
+  "hypotension": [],
+  "hypotrichosis": [],
+  "hypoxia": [],
+  "idiopathic pulmonary fibrosis": [
+    "Other / Unclassified:1"
+  ],
+  "immune complex diseases": [],
+  "immunoglobulin g4-related disease": [
+    "Other / Unclassified:1"
+  ],
+  "immunoproliferative disorders": [
+    "Other / Unclassified:1"
+  ],
+  "impetigo": [],
+  "infectious mononucleosis": [
+    "Other / Unclassified:1"
+  ],
+  "inflammation": [],
+  "inflammatory bowel diseases": [],
+  "insomnia, fatal familial": [],
+  "insulin resistance": [],
+  "irritable bowel syndrome": [
+    "Other / Unclassified:1"
+  ],
+  "joint diseases": [],
+  "keloid": [
+    "Other / Unclassified:1"
+  ],
+  "keratoconjunctivitis": [
+    "Dermatologic / Atopic Condition:1"
+  ],
+  "keratoderma, palmoplantar": [],
+  "keratosis, seborrheic": [],
+  "laboratory infection": [
+    "COVID-19:1"
+  ],
+  "leg ulcer": [],
+  "lennox gastaut syndrome": [],
+  "leukemia, neutrophilic, chronic": [
+    "Myeloproliferative Neoplasm:1"
+  ],
+  "leukocyte disorders": [
+    "Other / Unclassified:1"
+  ],
+  "leukoencephalopathy, progressive multifocal": [
+    "Other / Unclassified:1"
+  ],
+  "leukopenia": [
+    "Other / Unclassified:1"
+  ],
+  "lip diseases": [
+    "Other / Unclassified:1"
+  ],
+  "lipodystrophy": [],
+  "lipodystrophy, familial partial": [],
+  "liver cirrhosis, alcoholic": [
+    "Liver Disease:1"
+  ],
+  "liver cirrhosis, biliary": [],
+  "liver diseases": [
+    "Other / Unclassified:1",
+    "Transplantation / Transplant Complication:1"
+  ],
+  "liver failure": [
+    "Liver Disease:1"
+  ],
+  "lower urinary tract symptoms": [],
+  "lung diseases": [
+    "Other / Unclassified:1",
+    "Transplantation / Transplant Complication:1"
+  ],
+  "lung diseases, interstitial": [
+    "Other / Unclassified:1"
+  ],
+  "lung diseases, obstructive": [
+    "Other / Unclassified:1"
+  ],
+  "lupus erythematosus, discoid": [
+    "Other / Unclassified:1"
+  ],
+  "lymphatic abnormalities": [
+    "Other / Unclassified:1"
+  ],
+  "lymphatic diseases": [
+    "Other / Unclassified:1"
+  ],
+  "lymphocytosis": [
+    "Other / Unclassified:1"
+  ],
+  "lymphohistiocytosis, hemophagocytic": [
+    "Other / Unclassified:1"
+  ],
+  "malabsorption syndromes": [],
+  "malaria": [],
+  "malaria, falciparum": [],
+  "marijuana use": [
+    "Other / Unclassified:1"
+  ],
+  "mental disorders": [],
+  "metabolic syndrome": [],
+  "metabolism, inborn errors": [
+    "Other / Unclassified:1"
+  ],
+  "metaplasia": [
+    "Other / Unclassified:1"
+  ],
+  "methemoglobinemia": [],
+  "microsatellite instability": [
+    "Other / Unclassified:4",
+    "Advanced / Metastatic Solid Tumor:3",
+    "Biomarker / Molecular Alteration:3"
+  ],
+  "microscopic polyangiitis": [
+    "Other / Unclassified:1"
+  ],
+  "mitochondrial diseases": [],
+  "mitochondrial myopathies": [],
+  "mood disorders": [],
+  "motor disorders": [],
+  "mucormycosis": [],
+  "muscular atrophy, spinal": [],
+  "muscular dystrophies": [],
+  "muscular dystrophy, duchenne": [],
+  "musculoskeletal diseases": [
+    "Other / Unclassified:1"
+  ],
+  "musculoskeletal pain": [],
+  "myasthenia gravis": [
+    "Other / Unclassified:1"
+  ],
+  "myasthenic syndromes, congenital": [],
+  "mycobacterium infections, nontuberculous": [],
+  "myelodysplastic-myeloproliferative diseases": [
+    "Myelodysplastic Syndrome:1",
+    "Myeloproliferative Neoplasm:1"
+  ],
+  "myocardial ischemia": [
+    "Cardiovascular Disease:1"
+  ],
+  "myositis ossificans": [],
+  "narcolepsy": [],
+  "nasal obstruction": [],
+  "nausea": [],
+  "neck pain": [],
+  "neonatal sepsis": [],
+  "nephritis": [],
+  "nephrotic syndrome": [
+    "Other / Unclassified:1"
+  ],
+  "nervous system diseases": [
+    "Neurologic Disease:1",
+    "Other / Unclassified:1"
+  ],
+  "neuralgia": [
+    "Other / Unclassified:1"
+  ],
+  "neuralgia, postherpetic": [],
+  "neurodegenerative diseases": [
+    "Other / Unclassified:1"
+  ],
+  "neurodermatitis": [
+    "Other / Unclassified:1"
+  ],
+  "neurodevelopmental disorders": [],
+  "neuromuscular diseases": [],
+  "neuromyelitis optica": [],
+  "nocturia": [],
+  "non-alcoholic fatty liver disease": [],
+  "nutrition disorders": [],
+  "opioid-related disorders": [],
+  "optic nerve diseases": [],
+  "osteoarthritis": [],
+  "osteoarthritis, hip": [],
+  "osteoarthritis, knee": [
+    "Other / Unclassified:1"
+  ],
+  "osteogenesis imperfecta": [],
+  "osteoporosis": [
+    "Other / Unclassified:1"
+  ],
+  "pain": [
+    "Symptom / Clinical Finding:1"
+  ],
+  "pain, postoperative": [],
+  "pain, procedural": [],
+  "pancreatic diseases": [
+    "Pancreatic Cancer:1"
+  ],
+  "papillomavirus infections": [
+    "Other / Unclassified:1"
+  ],
+  "paranasal sinus diseases": [
+    "Other / Unclassified:1"
+  ],
+  "paraproteinemias": [
+    "Other / Unclassified:1"
+  ],
+  "parkinson disease": [
+    "Other / Unclassified:1"
+  ],
+  "pathological conditions, anatomical": [
+    "Clinical / Staging Concept:1"
+  ],
+  "pelvic pain": [
+    "Symptom / Clinical Finding:1"
+  ],
+  "pemphigoid, bullous": [
+    "Bullous Pemphigoid:1"
+  ],
+  "pemphigus": [],
+  "peri-implantitis": [],
+  "periodontitis": [],
+  "peripheral arterial disease": [],
+  "philadelphia chromosome": [
+    "Acute Lymphoblastic Leukemia:11",
+    "Chronic Myeloid Leukemia:5",
+    "Other / Unclassified:3"
+  ],
+  "phobia, social": [],
+  "photophobia": [
+    "Other / Unclassified:1"
+  ],
+  "pituitary diseases": [],
+  "plaque, amyloid": [
+    "Amyloidosis:1"
+  ],
+  "pneumoconiosis": [],
+  "pneumonia": [
+    "Other / Unclassified:1"
+  ],
+  "pneumonia, bacterial": [],
+  "pneumonia, viral": [],
+  "poems syndrome": [
+    "Other / Unclassified:1"
+  ],
+  "polycystic kidney, autosomal dominant": [
+    "Kidney Cancer / Renal Cell Carcinoma:1"
+  ],
+  "polymicrogyria": [
+    "Other / Unclassified:1"
+  ],
+  "polymyalgia rheumatica": [
+    "Other / Unclassified:1"
+  ],
+  "polyradiculoneuropathy, chronic inflammatory demyelinating": [
+    "Other / Unclassified:1"
+  ],
+  "post-concussion syndrome": [
+    "Other / Unclassified:1"
+  ],
+  "post-traumatic headache": [
+    "Other / Unclassified:1"
+  ],
+  "postoperative nausea and vomiting": [],
+  "pouchitis": [],
+  "pregnancy complications": [],
+  "pressure ulcer": [],
+  "prostatic hyperplasia": [],
+  "protein deficiency": [],
+  "protein-losing enteropathies": [],
+  "psychomotor agitation": [],
+  "psychotic disorders": [],
+  "puberty, precocious": [],
+  "puerperal disorders": [],
+  "pulmonary embolism": [],
+  "pulmonary fibrosis": [
+    "COVID-19:1",
+    "Other / Unclassified:1"
+  ],
+  "pulmonary heart disease": [
+    "Other / Unclassified:1"
+  ],
+  "purpura": [],
+  "purpura, thrombocytopenic": [],
+  "purpura, thrombocytopenic, idiopathic": [],
+  "pyelonephritis": [],
+  "pyruvate dehydrogenase complex deficiency disease": [
+    "Other / Unclassified:1"
+  ],
+  "radiation pneumonitis": [],
+  "radiculopathy": [],
+  "radius fractures": [],
+  "rare diseases": [
+    "Other / Unclassified:1"
+  ],
+  "recurrence": [
+    "Other / Unclassified:2",
+    "Advanced / Metastatic Solid Tumor:1",
+    "Cancer / Neoplasm:1"
+  ],
+  "refractive errors": [],
+  "renal artery obstruction": [],
+  "renal colic": [],
+  "respiratory distress syndrome, adult": [
+    "Respiratory Disease:1"
+  ],
+  "respiratory hypersensitivity": [
+    "Other / Unclassified:1"
+  ],
+  "respiratory syncytial virus infections": [],
+  "respiratory tract diseases": [
+    "Other / Unclassified:1"
+  ],
+  "respiratory tract infections": [
+    "Other / Unclassified:1"
+  ],
+  "restless legs syndrome": [],
+  "retinal degeneration": [
+    "Other / Unclassified:1"
+  ],
+  "retinal neovascularization": [
+    "Other / Unclassified:1"
+  ],
+  "retinitis pigmentosa": [
+    "Other / Unclassified:1"
+  ],
+  "rett syndrome": [],
+  "rhinitis, allergic, perennial": [],
+  "rhinitis, allergic, seasonal": [],
+  "rosacea": [
+    "Other / Unclassified:1"
+  ],
+  "sarcoidosis": [
+    "Other / Unclassified:1"
+  ],
+  "schizophrenia": [],
+  "schizophrenia spectrum and other psychotic disorders": [
+    "Other / Unclassified:1"
+  ],
+  "sclerosis": [
+    "Hodgkin Lymphoma:4",
+    "Other / Unclassified:2",
+    "Systemic Sclerosis:2"
+  ],
+  "seizures": [],
+  "self mutilation": [],
+  "sepsis": [
+    "Other / Unclassified:1"
+  ],
+  "septo-optic dysplasia": [],
+  "seroma": [],
+  "severe combined immunodeficiency": [],
+  "sexual dysfunctions, psychological": [],
+  "short bowel syndrome": [],
+  "sickle cell trait": [
+    "Sickle Cell Disease:1"
+  ],
+  "signs and symptoms": [
+    "Other / Unclassified:1"
+  ],
+  "signs and symptoms, digestive": [],
+  "sjogren's syndrome": [],
+  "skin diseases": [
+    "Other / Unclassified:2",
+    "Atopic Dermatitis / Eczema:1",
+    "Dermatologic / Atopic Condition:1"
+  ],
+  "skin diseases, bacterial": [],
+  "skin diseases, genetic": [
+    "Dermatologic / Atopic Condition:1",
+    "Other / Unclassified:1"
+  ],
+  "skin diseases, infectious": [],
+  "skin diseases, papulosquamous": [],
+  "skin manifestations": [],
+  "sleep apnea, obstructive": [],
+  "sleep disorders, intrinsic": [],
+  "sleepiness": [],
+  "small fiber neuropathy": [
+    "Other / Unclassified:1"
+  ],
+  "soft tissue injuries": [],
+  "spasm": [],
+  "spasms, infantile": [],
+  "spinal stenosis": [],
+  "spondylitis": [],
+  "spondylitis, ankylosing": [
+    "Spondyloarthritis:1"
+  ],
+  "staphylococcal skin infections": [],
+  "status epilepticus": [],
+  "steroid metabolism, inborn errors": [
+    "Other / Unclassified:1"
+  ],
+  "stomach diseases": [],
+  "stomatitis": [
+    "Other / Unclassified:1"
+  ],
+  "stroke": [
+    "Stroke / Cerebrovascular Disease:1"
+  ],
+  "subarachnoid hemorrhage": [],
+  "supranuclear palsy, progressive": [
+    "Other / Unclassified:1"
+  ],
+  "surgical wound": [],
+  "systemic inflammatory response syndrome": [],
+  "systemic vasculitis": [],
+  "takayasu arteritis": [
+    "Other / Unclassified:1"
+  ],
+  "tendinopathy": [],
+  "tertiary lymphoid structures": [
+    "Other / Unclassified:1"
+  ],
+  "testicular diseases": [
+    "Other / Unclassified:1"
+  ],
+  "thrombocytosis": [
+    "Other / Unclassified:1"
+  ],
+  "thromboembolism": [],
+  "thrombosis": [],
+  "thrombotic microangiopathies": [
+    "Other / Unclassified:1",
+    "Transplantation / Transplant Complication:1"
+  ],
+  "tobacco use disorder": [
+    "Other / Unclassified:1"
+  ],
+  "tooth discoloration": [],
+  "translocation, genetic": [
+    "Biomarker / Molecular Alteration:1"
+  ],
+  "tuberculosis, lymph node": [
+    "Clinical / Staging Concept:1"
+  ],
+  "ulcer": [],
+  "unverricht-lundborg syndrome": [],
+  "urinary bladder neck obstruction": [],
+  "urinary bladder, neurogenic": [],
+  "urinary bladder, overactive": [],
+  "urinary calculi": [],
+  "urinary incontinence, urge": [],
+  "urinary tract infections": [],
+  "uveitis": [],
+  "vaginal diseases": [
+    "Cervical Cancer:1"
+  ],
+  "vascular diseases": [
+    "Other / Unclassified:1"
+  ],
+  "vasculitis": [
+    "Vasculitis:1"
+  ],
+  "venous thromboembolism": [],
+  "venous thrombosis": [],
+  "ventricular dysfunction, left": [
+    "Other / Unclassified:1"
+  ],
+  "virus diseases": [
+    "Biomarker / Molecular Alteration:1"
+  ],
+  "vitamin d deficiency": [],
+  "vitamin k deficiency bleeding": [],
+  "vitreous hemorrhage": [
+    "Other / Unclassified:1"
+  ],
+  "vomiting": [],
+  "von willebrand disease, type 3": [
+    "Other / Unclassified:1"
+  ],
+  "warts": [],
+  "weight gain": [],
+  "x-linked combined immunodeficiency diseases": [],
+  "xanthogranuloma, juvenile": [
+    "Other / Unclassified:1"
+  ],
+  "xerostomia": []
+}

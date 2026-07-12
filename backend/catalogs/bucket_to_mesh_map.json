@@ -1,5 +1,4 @@
 {
-  "Achondroplasia": [],
   "Acute Lymphoblastic Leukemia": [
     "precursor b-cell lymphoblastic leukemia-lymphoma",
     "precursor cell lymphoblastic leukemia-lymphoma",
@@ -15,26 +14,36 @@
     "hemangioendothelioma, epithelioid",
     "hemangiosarcoma"
   ],
-  "Aging / Age-Related Condition": [],
-  "Allergic Disease": [],
-  "Alopecia": [],
-  "Alzheimer’s Disease / Dementia": [],
+  "Allergic Disease": [
+    "peanut hypersensitivity",
+    "rhinitis, allergic"
+  ],
+  "Alzheimer’s Disease / Dementia": [
+    "alzheimer disease",
+    "dementia"
+  ],
   "Amyloidosis": [
+    "amyloidosis",
     "immunoglobulin light-chain amyloidosis"
   ],
-  "Amyotrophic Lateral Sclerosis": [],
   "Anal Cancer": [
+    "anal gland neoplasms",
     "anus neoplasms"
   ],
-  "Anaplastic Large Cell Lymphoma": [],
-  "Appendiceal Cancer": [],
-  "Aspirin-Exacerbated Respiratory Disease": [],
-  "Asthma": [],
-  "Atopic Dermatitis / Eczema": [
-    "dermatitis, atopic"
+  "Asthma": [
+    "asthma"
   ],
-  "Autoimmune Disease": [],
+  "Atopic Dermatitis / Eczema": [
+    "dermatitis, atopic",
+    "eczema",
+    "skin diseases, eczematous"
+  ],
+  "Autoimmune Disease": [
+    "anemia, hemolytic, autoimmune",
+    "autoimmune diseases"
+  ],
   "Basal Cell Carcinoma": [
+    "basal cell nevus syndrome",
     "carcinoma, basal cell",
     "neoplasms, basal cell"
   ],
@@ -45,97 +54,217 @@
     "cholangiocarcinoma",
     "gallbladder neoplasms"
   ],
-  "Biomarker / Molecular Alteration": [],
-  "Blood Disorder / Cytopenia": [],
-  "Bone / Bone Marrow Disorder": [],
-  "Bone Marrow Failure / Aplastic Anemia": [],
-  "Bone Metastases": [],
+  "Biomarker / Molecular Alteration": [
+    "blood protein disorders",
+    "dna repair-deficiency disorders"
+  ],
+  "Blood Disorder / Cytopenia": [
+    "neutropenia",
+    "thrombocytopenia"
+  ],
   "Brain / Central Nervous System Tumor": [
     "astrocytoma",
+    "carcinoma, embryonal",
+    "cerebellar neoplasms",
+    "craniopharyngioma",
     "ependymoma",
+    "ganglioglioma",
     "glioblastoma",
     "glioma",
+    "medulloblastoma",
+    "meningioma",
+    "neurocytoma",
     "oligodendroglioma",
-    "paraganglioma"
+    "optic nerve glioma",
+    "paraganglioma",
+    "rhabdoid tumor"
   ],
   "Breast Cancer": [
     "breast neoplasms",
+    "breast neoplasms, male",
+    "carcinoma, ductal, breast",
     "inflammatory breast neoplasms",
     "triple negative breast neoplasms",
     "unilateral breast neoplasms"
   ],
-  "Bullous Pemphigoid": [],
   "Burkitt Lymphoma": [
     "burkitt lymphoma"
   ],
-  "COVID-19": [],
+  "COVID-19": [
+    "long qt syndrome"
+  ],
   "Cancer / Neoplasm": [
+    "acth syndrome, ectopic",
     "adenocarcinoma",
+    "adenocarcinoma, papillary",
+    "adenoma",
+    "adenoma, pleomorphic",
+    "adrenal cortex neoplasms",
+    "adrenal gland neoplasms",
+    "ameloblastoma",
     "bone neoplasms",
     "brain neoplasms",
     "bronchial neoplasms",
+    "carcinoma",
+    "carcinoma, adenosquamous",
+    "carcinoma, ductal",
+    "carcinoma, intraductal, noninfiltrating",
+    "carcinoma, large cell",
+    "carcinoma, papillary",
     "carcinoma, small cell",
     "carcinoma, squamous cell",
+    "central nervous system cysts",
     "central nervous system neoplasms",
+    "choroid plexus neoplasms",
+    "dendritic cell sarcoma, follicular",
     "desmoplastic small round cell tumor",
     "digestive system neoplasms",
+    "dysgerminoma",
+    "endocrine gland neoplasms",
     "gastrointestinal neoplasms",
     "genital neoplasms, female",
+    "genital neoplasms, male",
+    "giant cell tumor of bone",
     "giant cell tumor of tendon sheath",
+    "giant cell tumors",
+    "hemangioblastoma",
+    "histiocytic sarcoma",
     "intestinal neoplasms",
+    "keratosis, actinic",
+    "lambert-eaton myasthenic syndrome",
+    "laryngeal neoplasms",
+    "leiomyoma",
+    "leukoplakia",
+    "lipoma",
     "liver neoplasms",
     "lung neoplasms",
+    "lynch syndrome ii",
+    "mediastinal neoplasms",
+    "meningeal carcinomatosis",
+    "mixed tumor, malignant",
+    "multiple endocrine neoplasia",
+    "myofibromatosis",
+    "nelson syndrome",
+    "neoplasm invasiveness",
     "neoplasm metastasis",
+    "neoplasm recurrence, local",
     "neoplasms",
     "neoplasms by histologic type",
     "neoplasms by site",
+    "neoplasms, experimental",
+    "neoplasms, germ cell and embryonal",
+    "neoplasms, glandular and epithelial",
+    "neoplasms, multiple primary",
+    "neoplasms, nerve tissue",
     "neoplasms, neuroepithelial",
     "neoplasms, plasma cell",
+    "neoplasms, radiation-induced",
+    "neoplasms, second primary",
     "neoplasms, squamous cell",
+    "neoplastic cells, circulating",
+    "nerve sheath neoplasms",
+    "nervous system neoplasms",
+    "neuroectodermal tumors",
+    "neuroectodermal tumors, primitive",
+    "neuroectodermal tumors, primitive, peripheral",
+    "nevi and melanomas",
+    "odontogenic tumors",
+    "papilloma",
+    "paranasal sinus neoplasms",
+    "paraneoplastic syndromes, nervous system",
+    "penile neoplasms",
     "peritoneal neoplasms",
+    "pituitary neoplasms",
+    "polycystic ovary syndrome",
+    "precancerous conditions",
+    "preleukemia",
+    "pseudomyxoma peritonei",
     "respiratory tract neoplasms",
+    "seminoma",
     "skin neoplasms",
+    "soft tissue neoplasms",
+    "solitary fibrous tumors",
+    "spinal neoplasms",
     "synovitis, pigmented villonodular",
+    "teratoma",
+    "testicular neoplasms",
     "thoracic neoplasms",
+    "thymus neoplasms",
+    "trophoblastic neoplasms",
+    "tuberous sclerosis",
+    "urethral neoplasms",
     "urogenital neoplasms",
-    "urologic neoplasms"
+    "urologic neoplasms",
+    "uterine cervical dysplasia",
+    "wilms tumor"
   ],
-  "Cancer Treatment / Therapy Concept": [],
-  "Cancer of Unknown Primary": [],
-  "Cardiovascular Disease": [],
-  "Cervical Cancer": [],
-  "Chronic Lymphocytic Leukemia / Small Lymphocytic Lymphoma": [],
+  "Cancer Treatment / Therapy Concept": [
+    "androgen-insensitivity syndrome",
+    "chemotherapy-induced febrile neutropenia"
+  ],
+  "Cancer of Unknown Primary": [
+    "neoplasms, unknown primary"
+  ],
+  "Cardiovascular Disease": [
+    "myocardial infarction",
+    "st elevation myocardial infarction"
+  ],
+  "Cervical Cancer": [
+    "cervical intraepithelial neoplasia"
+  ],
   "Chronic Myeloid Leukemia": [
     "leukemia, myeloid, accelerated phase",
     "leukemia, myeloid, chronic, atypical, bcr-abl negative"
   ],
-  "Chronic Myelomonocytic Leukemia": [],
-  "Chronic Obstructive Pulmonary Disease": [],
-  "Chronic Rhinosinusitis": [],
-  "Clinical / Staging Concept": [],
-  "Clinical Pharmacology / Study Design": [],
-  "Cluster Headache": [],
+  "Chronic Myelomonocytic Leukemia": [
+    "leukemia, myelomonocytic, acute"
+  ],
+  "Chronic Rhinosinusitis": [
+    "nasal polyps",
+    "sinusitis"
+  ],
+  "Cluster Headache": [
+    "cluster headache"
+  ],
   "Colorectal Cancer": [
     "appendiceal neoplasms",
     "colonic neoplasms",
     "colorectal neoplasms",
     "rectal neoplasms"
   ],
-  "Cutaneous Squamous Cell Carcinoma": [],
-  "Cystic Fibrosis": [],
-  "Dermatologic / Atopic Condition": [],
-  "Diabetes Mellitus": [],
+  "Cystic Fibrosis": [
+    "cystic fibrosis"
+  ],
+  "Dermatologic / Atopic Condition": [
+    "fasciitis",
+    "hand-foot syndrome"
+  ],
+  "Diabetes Mellitus": [
+    "diabetes mellitus",
+    "diabetes mellitus, type 1"
+  ],
   "Diffuse Large B-Cell Lymphoma": [
     "lymphoma, primary effusion"
   ],
   "Endometrial / Uterine Cancer": [
+    "carcinosarcoma",
     "endometrial neoplasms",
+    "sarcoma, endometrial stromal",
     "uterine cervical neoplasms",
     "uterine neoplasms"
   ],
-  "Endometriosis": [],
-  "Eosinophilic Gastrointestinal Disease": [],
-  "Eosinophilic Granulomatosis with Polyangiitis": [],
+  "Endometriosis": [
+    "endometriosis"
+  ],
+  "Eosinophilic Gastrointestinal Disease": [
+    "eosinophilic esophagitis",
+    "gastritis",
+    "gastroenteritis"
+  ],
+  "Eosinophilic Granulomatosis with Polyangiitis": [
+    "churg-strauss syndrome",
+    "granulomatosis with polyangiitis"
+  ],
   "Esophageal Cancer": [
     "esophageal neoplasms",
     "esophageal squamous cell carcinoma"
@@ -143,59 +272,90 @@
   "Familial Adenomatous Polyposis": [
     "adenomatous polyposis coli"
   ],
-  "Follicular Lymphoma": [],
   "Gastric Cancer": [
     "adenocarcinoma, mucinous",
     "stomach neoplasms"
   ],
-  "Gastroesophageal Junction Cancer": [],
+  "Gastroesophageal Junction Cancer": [
+    "gastroesophageal reflux"
+  ],
   "Gastrointestinal Stromal Tumor": [
     "gastrointestinal stromal tumors"
   ],
-  "Graft-versus-Host Disease": [],
-  "Gynecologic Condition": [],
+  "Graft-versus-Host Disease": [
+    "graft vs host disease"
+  ],
   "Head and Neck Cancer": [
     "carcinoma, adenoid cystic",
     "head and neck neoplasms",
+    "lip neoplasms",
     "mouth neoplasms",
     "nasopharyngeal carcinoma",
     "nasopharyngeal neoplasms",
     "oropharyngeal neoplasms",
+    "parotid neoplasms",
     "salivary gland neoplasms",
     "squamous cell carcinoma of head and neck"
   ],
   "Hematologic Malignancy": [
     "dendritic cell sarcoma, interdigitating",
+    "hematologic diseases",
     "hematologic neoplasms"
   ],
   "Hodgkin Lymphoma": [
+    "hodgkin disease",
     "lymphoma, non-hodgkin"
   ],
-  "Inflammatory Bowel Disease": [],
-  "Kaposi Sarcoma": [],
+  "Inflammatory Bowel Disease": [
+    "colitis, ulcerative",
+    "crohn disease"
+  ],
+  "Kaposi Sarcoma": [
+    "sarcoma, kaposi"
+  ],
   "Kidney Cancer / Renal Cell Carcinoma": [
     "adenocarcinoma, clear cell",
     "carcinoma, renal cell",
+    "kidney diseases",
+    "kidney failure, chronic",
     "kidney neoplasms"
   ],
-  "Kidney Disease": [],
+  "Kidney Disease": [
+    "renal insufficiency, chronic"
+  ],
   "Leukemia": [
+    "blast crisis",
     "leukemia",
+    "leukemia l1210",
+    "leukemia l5178",
+    "leukemia p388",
     "leukemia, b-cell",
     "leukemia, biphenotypic, acute",
+    "leukemia, hairy cell",
     "leukemia, lymphocytic, chronic, b-cell",
     "leukemia, lymphoid",
+    "leukemia, mast-cell",
+    "leukemia, megakaryoblastic, acute",
     "leukemia, myelogenous, chronic, bcr-abl positive",
+    "leukemia, myeloid",
     "leukemia, myeloid, acute",
     "leukemia, myeloid, chronic-phase",
     "leukemia, myelomonocytic, chronic",
     "leukemia, myelomonocytic, juvenile",
+    "leukemia, prolymphocytic",
+    "leukemia, prolymphocytic, b-cell",
+    "leukemia, prolymphocytic, t-cell",
+    "leukemia, promyelocytic, acute",
     "leukemia, t-cell"
   ],
   "Liver Cancer / Hepatocellular Carcinoma": [
     "carcinoma, hepatocellular"
   ],
-  "Liver Disease": [],
+  "Liver Disease": [
+    "hepatitis b",
+    "hepatitis b, chronic",
+    "liver cirrhosis"
+  ],
   "Lung Cancer": [
     "adenocarcinoma of lung",
     "carcinoma, bronchogenic"
@@ -212,127 +372,257 @@
     "lymphoma, t-cell",
     "lymphoma, t-cell, cutaneous",
     "lymphoma, t-cell, peripheral",
+    "lymphoproliferative disorders",
     "plasmablastic lymphoma"
   ],
-  "Mantle Cell Lymphoma": [],
-  "Marginal Zone Lymphoma": [],
   "Melanoma": [
     "eye neoplasms",
-    "melanoma"
+    "melanoma",
+    "uveal neoplasms"
   ],
   "Merkel Cell Carcinoma": [
     "carcinoma, merkel cell"
   ],
   "Mesothelioma": [
     "mesothelioma",
-    "pleural effusion, malignant"
+    "pleural effusion, malignant",
+    "pleural neoplasms"
   ],
   "Migraine": [
-    "migraine disorders"
+    "headache",
+    "migraine disorders",
+    "migraine with aura",
+    "migraine without aura"
   ],
   "Multiple Myeloma / Plasma Cell Neoplasm": [
     "leukemia, plasma cell",
     "multiple myeloma",
+    "plasmacytoma",
     "smoldering multiple myeloma"
   ],
   "Myelodysplastic Syndrome": [
-    "bone marrow neoplasms"
+    "bone marrow neoplasms",
+    "myelodysplastic syndromes"
   ],
   "Myeloproliferative Neoplasm": [
-    "polycythemia vera"
+    "myeloproliferative disorders",
+    "polycythemia vera",
+    "primary myelofibrosis",
+    "thrombocythemia, essential"
   ],
   "Neuroendocrine Tumor / Carcinoid Tumor": [
     "adenoma, islet cell",
+    "carcinoid heart disease",
     "carcinoid tumor",
     "carcinoma, neuroendocrine",
+    "malignant carcinoid syndrome",
     "multiple endocrine neoplasia type 1",
     "neuroendocrine tumors"
   ],
-  "Neurologic Disease": [],
+  "Neurologic Disease": [
+    "central nervous system diseases"
+  ],
   "Non-Small Cell Lung Cancer": [
     "carcinoma, non-small-cell lung"
   ],
-  "Ophthalmic Disease": [],
+  "Obesity": [
+    "obesity",
+    "overweight",
+    "prader-willi syndrome"
+  ],
+  "Ophthalmic Disease": [
+    "diabetic retinopathy",
+    "macular degeneration",
+    "macular edema",
+    "retinal vein occlusion",
+    "retinopathy of prematurity",
+    "wet macular degeneration"
+  ],
   "Other / Unclassified": [
+    "acquired immunodeficiency syndrome",
+    "acute-phase reaction",
+    "arthritis, juvenile",
+    "brain injury, chronic",
+    "bronchitis, chronic",
+    "castleman disease",
+    "cell transformation, neoplastic",
+    "choroidal neovascularization",
+    "death",
+    "depressive disorder, treatment-resistant",
+    "digestive system diseases",
+    "epstein-barr virus infections",
+    "esthesioneuroblastoma, olfactory",
+    "factor v deficiency",
+    "ganglioneuroblastoma",
+    "gastrointestinal diseases",
+    "genetic diseases, inborn",
+    "gestational trophoblastic disease",
+    "giant cell arteritis",
+    "glomerulonephritis, membranous",
+    "hemophilia a",
+    "hepatic insufficiency",
+    "hepatic veno-occlusive disease",
     "hepatoblastoma",
+    "hidradenitis suppurativa",
+    "histiocytic disorders, malignant",
+    "hiv infections",
+    "hot flashes",
+    "immune system diseases",
+    "infection",
+    "infertility",
+    "infertility, female",
+    "intestinal diseases",
+    "leukoplakia, oral",
+    "lichen planus",
+    "lupus erythematosus, systemic",
+    "lupus nephritis",
+    "male urogenital diseases",
+    "monoclonal gammopathy of undetermined significance",
+    "multiple sclerosis",
+    "multiple sclerosis, chronic progressive",
+    "multiple sclerosis, relapsing-remitting",
     "mycosis fungoides",
+    "neoplasm, residual",
+    "neoplasms, hormone-dependent",
     "neuroblastoma",
     "neurofibroma",
     "neurofibroma, plexiform",
+    "neurofibromatoses",
+    "osteoporosis, postmenopausal",
+    "ovarian diseases",
+    "pediatric obesity",
     "pheochromocytoma",
     "pulmonary disease, chronic obstructive",
+    "renal insufficiency",
+    "retinal detachment",
+    "retinal diseases",
+    "severe acute respiratory syndrome",
+    "sleep wake disorders",
+    "temporomandibular joint disorders",
+    "trigeminal neuralgia",
+    "urologic diseases",
+    "vitiligo",
+    "von hippel-lindau disease",
     "waldenstrom macroglobulinemia"
   ],
   "Ovarian / Fallopian Tube / Primary Peritoneal Cancer": [
+    "carcinoma, endometrioid",
     "carcinoma, ovarian epithelial",
     "cystadenocarcinoma, serous",
     "fallopian tube neoplasms",
+    "granulosa cell tumor",
     "ovarian neoplasms"
   ],
   "Pancreatic Cancer": [
     "carcinoma, acinar cell",
+    "carcinoma, islet cell",
     "carcinoma, pancreatic ductal",
     "pancreatic intraductal neoplasms",
     "pancreatic neoplasms"
   ],
   "Prostate Cancer": [
+    "prostatic diseases",
     "prostatic neoplasms",
     "prostatic neoplasms, castration-resistant"
   ],
-  "Pruritus": [],
-  "Psoriasis": [],
-  "Respiratory Disease": [],
-  "Rheumatoid Arthritis": [],
+  "Pruritus": [
+    "prurigo",
+    "pruritus"
+  ],
+  "Psoriasis": [
+    "psoriasis"
+  ],
+  "Respiratory Disease": [
+    "bronchiolitis obliterans"
+  ],
+  "Rheumatoid Arthritis": [
+    "arthritis, rheumatoid"
+  ],
   "Sarcoma / Soft Tissue or Bone Tumor": [
     "chondrosarcoma",
+    "chondrosarcoma, mesenchymal",
     "chordoma",
+    "dermatofibrosarcoma",
+    "fibromatosis, aggressive",
     "fibromatosis, plantar",
+    "fibrosarcoma",
     "gliosarcoma",
+    "histiocytoma, malignant fibrous",
     "leiomyosarcoma",
     "liposarcoma",
     "liposarcoma, myxoid",
+    "neoplasms, connective and soft tissue",
     "neurofibromatosis 1",
+    "neurofibromatosis 2",
     "neurofibrosarcoma",
     "osteosarcoma",
     "rhabdomyosarcoma",
     "sarcoma",
+    "sarcoma 180",
+    "sarcoma 37",
     "sarcoma, alveolar soft part",
+    "sarcoma, clear cell",
     "sarcoma, ewing",
+    "sarcoma, myeloid",
     "sarcoma, synovial"
   ],
-  "Sickle Cell Disease": [],
+  "Sickle Cell Disease": [
+    "anemia, sickle cell"
+  ],
   "Small Cell Lung Cancer": [
     "small cell lung carcinoma"
   ],
-  "Spondyloarthritis": [],
-  "Stroke / Cerebrovascular Disease": [],
-  "Symptom / Clinical Finding": [],
+  "Spondyloarthritis": [
+    "spondylarthritis"
+  ],
+  "Symptom / Clinical Finding": [
+    "edema"
+  ],
   "Systemic Mastocytosis": [
     "mastocytosis, systemic"
   ],
-  "Systemic Sclerosis": [],
+  "Systemic Sclerosis": [
+    "scleroderma, systemic"
+  ],
   "T-Cell / NK-Cell Lymphoma": [
     "enteropathy-associated t-cell lymphoma",
+    "leukemia-lymphoma, adult t-cell",
     "lymphomatoid papulosis",
     "sezary syndrome"
   ],
-  "Thalassemia": [],
-  "Thymic Cancer": [],
+  "Thalassemia": [
+    "beta-thalassemia",
+    "thalassemia"
+  ],
+  "Thymic Cancer": [
+    "thymoma"
+  ],
   "Thyroid Cancer": [
     "carcinoma, medullary",
+    "thyroid cancer, papillary",
     "thyroid carcinoma, anaplastic",
+    "thyroid diseases",
     "thyroid neoplasms"
   ],
-  "Transplantation / Transplant Complication": [],
-  "Treatment Adverse Event / Toxicity": [],
+  "Transplantation / Transplant Complication": [
+    "postoperative complications"
+  ],
+  "Treatment Adverse Event / Toxicity": [
+    "neurotoxicity syndromes"
+  ],
   "Urothelial / Bladder Cancer": [
+    "carcinoma in situ",
     "carcinoma, transitional cell",
+    "muscle neoplasms",
     "ureteral neoplasms",
+    "urinary bladder diseases",
     "urinary bladder neoplasms"
   ],
-  "Urticaria": [],
-  "Vaginal / Vulvar Cancer": [],
-  "Vascular Malformation": [],
-  "Vasculitis": [],
-  "Obesity":["obesity"]
+  "Urticaria": [
+    "urticaria"
+  ],
+  "Vaginal / Vulvar Cancer": [
+    "vaginal neoplasms",
+    "vulvar neoplasms"
+  ]
 }

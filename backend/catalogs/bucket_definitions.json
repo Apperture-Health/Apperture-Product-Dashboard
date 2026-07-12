@@ -1,0 +1,1281 @@
+{
+  "Achondroplasia": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Acute Lymphoblastic Leukemia": {
+    "mesh_tree_prefixes": [
+      "C04.557.337.428.600",
+      "C15.604.515.560.600",
+      "C20.683.515.528.600"
+    ],
+    "mesh_anchors": [
+      "precursor b-cell lymphoblastic leukemia-lymphoma",
+      "precursor cell lymphoblastic leukemia-lymphoma",
+      "precursor t-cell lymphoblastic leukemia-lymphoma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Acute Myeloid Leukemia": {
+    "mesh_tree_prefixes": [
+      "C04.557.337.539.275.484"
+    ],
+    "mesh_anchors": [
+      "leukemia, monocytic, acute"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Adrenal Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.025.152",
+      "C04.588.322.078.265.750",
+      "C19.053.098.265.750",
+      "C19.053.347.500.750",
+      "C19.344.078.265.750"
+    ],
+    "mesh_anchors": [
+      "adrenocortical carcinoma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Advanced / Metastatic Solid Tumor": {
+    "mesh_tree_prefixes": [
+      "C04.557.450.795.390",
+      "C04.557.645.375.370.380",
+      "C04.557.645.390"
+    ],
+    "mesh_anchors": [
+      "hemangioendothelioma, epithelioid",
+      "hemangiosarcoma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Aging / Age-Related Condition": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Allergic Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Alopecia": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Alzheimer’s Disease / Dementia": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Amyloidosis": {
+    "mesh_tree_prefixes": [
+      "C04.557.595.250",
+      "C18.452.845.500.550",
+      "C20.683.515.507",
+      "C20.683.780.565"
+    ],
+    "mesh_anchors": [
+      "immunoglobulin light-chain amyloidosis"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Amyotrophic Lateral Sclerosis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Anal Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.588.274.476.411.307.790.040",
+      "C06.301.371.411.307.790.040",
+      "C06.405.249.411.307.790.040",
+      "C06.405.469.491.307.790.040",
+      "C06.405.469.860.101.163",
+      "C06.405.469.860.180.500.040"
+    ],
+    "mesh_anchors": [
+      "anus neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Anaplastic Large Cell Lymphoma": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Appendiceal Cancer": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Aspirin-Exacerbated Respiratory Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Asthma": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Atopic Dermatitis / Eczema": {
+    "mesh_tree_prefixes": [
+      "C16.320.850.210",
+      "C17.800.174.193",
+      "C17.800.815.193",
+      "C17.800.827.210",
+      "C20.543.480.343"
+    ],
+    "mesh_anchors": [
+      "dermatitis, atopic"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Autoimmune Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Basal Cell Carcinoma": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.165",
+      "C04.557.470.565"
+    ],
+    "mesh_anchors": [
+      "carcinoma, basal cell",
+      "neoplasms, basal cell"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Biliary Tract Cancer / Cholangiocarcinoma": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.025.450",
+      "C04.588.033",
+      "C04.588.274.120",
+      "C06.130.120.120",
+      "C06.130.320",
+      "C06.130.564.401",
+      "C06.301.120"
+    ],
+    "mesh_anchors": [
+      "abdominal neoplasms",
+      "bile duct neoplasms",
+      "biliary tract neoplasms",
+      "cholangiocarcinoma",
+      "gallbladder neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Biomarker / Molecular Alteration": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Blood Disorder / Cytopenia": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Bone / Bone Marrow Disorder": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Bone Marrow Failure / Aplastic Anemia": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Bone Metastases": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Brain / Central Nervous System Tumor": {
+    "mesh_tree_prefixes": [
+      "C04.557.465.625.600.380",
+      "C04.557.465.625.650.700",
+      "C04.557.470.670.380",
+      "C04.557.580.625.600.380",
+      "C04.557.580.625.650.700"
+    ],
+    "mesh_anchors": [
+      "astrocytoma",
+      "ependymoma",
+      "glioblastoma",
+      "glioma",
+      "oligodendroglioma",
+      "paraganglioma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Breast Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.588.180",
+      "C17.800.090.500"
+    ],
+    "mesh_anchors": [
+      "breast neoplasms",
+      "inflammatory breast neoplasms",
+      "triple negative breast neoplasms",
+      "unilateral breast neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Bullous Pemphigoid": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Burkitt Lymphoma": {
+    "mesh_tree_prefixes": [
+      "C02.256.466.313.165",
+      "C02.928.313.165",
+      "C04.557.386.480.150.165",
+      "C15.604.515.569.480.150.165",
+      "C20.683.515.761.480.150.165"
+    ],
+    "mesh_anchors": [
+      "burkitt lymphoma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "COVID-19": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Cancer / Neoplasm": {
+    "mesh_tree_prefixes": [
+      "C04",
+      "C05.116.231",
+      "C05.550.870.445",
+      "C05.651.869.762",
+      "C06.301",
+      "C06.405.249",
+      "C06.405.469.491",
+      "C06.552.697",
+      "C06.844.620",
+      "C08.127.265",
+      "C08.381.540",
+      "C08.785",
+      "C10.228.140.211",
+      "C10.551.240",
+      "C12.758",
+      "C13.351.937",
+      "C17.800.882",
+      "C23.550.727.650"
+    ],
+    "mesh_anchors": [
+      "adenocarcinoma",
+      "bone neoplasms",
+      "brain neoplasms",
+      "bronchial neoplasms",
+      "carcinoma, small cell",
+      "carcinoma, squamous cell",
+      "central nervous system neoplasms",
+      "desmoplastic small round cell tumor",
+      "digestive system neoplasms",
+      "gastrointestinal neoplasms",
+      "genital neoplasms, female",
+      "giant cell tumor of tendon sheath",
+      "intestinal neoplasms",
+      "liver neoplasms",
+      "lung neoplasms",
+      "neoplasm metastasis",
+      "neoplasms",
+      "neoplasms by histologic type",
+      "neoplasms by site",
+      "neoplasms, neuroepithelial",
+      "neoplasms, plasma cell",
+      "neoplasms, squamous cell",
+      "peritoneal neoplasms",
+      "respiratory tract neoplasms",
+      "skin neoplasms",
+      "synovitis, pigmented villonodular",
+      "thoracic neoplasms",
+      "urogenital neoplasms",
+      "urologic neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Cancer Treatment / Therapy Concept": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Cancer of Unknown Primary": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Cardiovascular Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Cervical Cancer": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Chronic Lymphocytic Leukemia / Small Lymphocytic Lymphoma": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Chronic Myeloid Leukemia": {
+    "mesh_tree_prefixes": [
+      "C04.557.337.539.250.300",
+      "C04.557.337.539.300",
+      "C15.378.190.615.500",
+      "C15.378.190.636.370.300"
+    ],
+    "mesh_anchors": [
+      "leukemia, myeloid, accelerated phase",
+      "leukemia, myeloid, chronic, atypical, bcr-abl negative"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Chronic Myelomonocytic Leukemia": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Chronic Obstructive Pulmonary Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Chronic Rhinosinusitis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Clinical / Staging Concept": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Clinical Pharmacology / Study Design": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Cluster Headache": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Colorectal Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.588.274.476.411.184.290",
+      "C04.588.274.476.411.307",
+      "C06.301.371.411.184.290",
+      "C06.301.371.411.307",
+      "C06.405.249.411.184.290",
+      "C06.405.249.411.307",
+      "C06.405.469.110.417.290",
+      "C06.405.469.158.356",
+      "C06.405.469.491.184.290",
+      "C06.405.469.491.307",
+      "C06.405.469.860.180"
+    ],
+    "mesh_anchors": [
+      "appendiceal neoplasms",
+      "colonic neoplasms",
+      "colorectal neoplasms",
+      "rectal neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Cutaneous Squamous Cell Carcinoma": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Cystic Fibrosis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Dermatologic / Atopic Condition": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Diabetes Mellitus": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Diffuse Large B-Cell Lymphoma": {
+    "mesh_tree_prefixes": [
+      "C04.557.386.480.150.592",
+      "C15.604.515.569.480.150.592",
+      "C20.683.515.761.480.150.592"
+    ],
+    "mesh_anchors": [
+      "lymphoma, primary effusion"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Endometrial / Uterine Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.588.945.418.948",
+      "C13.351.500.852.593.131",
+      "C13.351.500.852.762",
+      "C13.351.937.418.875"
+    ],
+    "mesh_anchors": [
+      "endometrial neoplasms",
+      "uterine cervical neoplasms",
+      "uterine neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Endometriosis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Eosinophilic Gastrointestinal Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Eosinophilic Granulomatosis with Polyangiitis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Esophageal Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.400.330",
+      "C04.557.470.700.400.565",
+      "C04.588.274.476.205",
+      "C04.588.443.353",
+      "C06.301.371.205",
+      "C06.405.117.430",
+      "C06.405.249.205"
+    ],
+    "mesh_anchors": [
+      "esophageal neoplasms",
+      "esophageal squamous cell carcinoma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Familial Adenomatous Polyposis": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.035.215.100",
+      "C04.588.274.476.411.307.089",
+      "C04.700.100",
+      "C06.301.371.411.307.090",
+      "C06.405.249.411.307.090",
+      "C06.405.469.158.356.090",
+      "C06.405.469.491.307.090",
+      "C06.405.469.578.249",
+      "C16.320.700.100"
+    ],
+    "mesh_anchors": [
+      "adenomatous polyposis coli"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Follicular Lymphoma": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Gastric Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.025.075",
+      "C04.557.470.590.075",
+      "C04.588.274.476.767",
+      "C06.301.371.767",
+      "C06.405.249.767",
+      "C06.405.748.789"
+    ],
+    "mesh_anchors": [
+      "adenocarcinoma, mucinous",
+      "stomach neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Gastroesophageal Junction Cancer": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Gastrointestinal Stromal Tumor": {
+    "mesh_tree_prefixes": [
+      "C04.557.450.565.370",
+      "C06.301.371.308",
+      "C06.405.249.308"
+    ],
+    "mesh_anchors": [
+      "gastrointestinal stromal tumors"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Graft-versus-Host Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Gynecologic Condition": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Head and Neck Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.025.220",
+      "C04.557.470.200.400.565",
+      "C04.557.470.200.623",
+      "C04.588.443",
+      "C07.465.530",
+      "C07.465.815.718",
+      "C07.550.350.650",
+      "C07.550.745.650",
+      "C07.550.745.671",
+      "C09.647.710.650",
+      "C09.647.710.685",
+      "C09.775.350.650",
+      "C09.775.549.650",
+      "C09.775.549.685"
+    ],
+    "mesh_anchors": [
+      "carcinoma, adenoid cystic",
+      "head and neck neoplasms",
+      "mouth neoplasms",
+      "nasopharyngeal carcinoma",
+      "nasopharyngeal neoplasms",
+      "oropharyngeal neoplasms",
+      "salivary gland neoplasms",
+      "squamous cell carcinoma of head and neck"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Hematologic Malignancy": {
+    "mesh_tree_prefixes": [
+      "C04.557.227.199",
+      "C04.588.448",
+      "C15.378.400",
+      "C15.604.250.390.199"
+    ],
+    "mesh_anchors": [
+      "dendritic cell sarcoma, interdigitating",
+      "hematologic neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Hodgkin Lymphoma": {
+    "mesh_tree_prefixes": [
+      "C04.557.386.480",
+      "C15.604.515.569.480",
+      "C20.683.515.761.480"
+    ],
+    "mesh_anchors": [
+      "lymphoma, non-hodgkin"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Inflammatory Bowel Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Kaposi Sarcoma": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Kidney Cancer / Renal Cell Carcinoma": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.025.045",
+      "C04.557.470.200.025.390",
+      "C04.588.945.947.535",
+      "C12.758.820.750",
+      "C12.777.419.473",
+      "C13.351.937.820.535",
+      "C13.351.968.419.473"
+    ],
+    "mesh_anchors": [
+      "adenocarcinoma, clear cell",
+      "carcinoma, renal cell",
+      "kidney neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Kidney Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Leukemia": {
+    "mesh_tree_prefixes": [
+      "C04.557.337",
+      "C15.378.190.615.510",
+      "C15.378.190.615.520",
+      "C15.378.190.636.370",
+      "C15.604.515.560",
+      "C20.683.515.528"
+    ],
+    "mesh_anchors": [
+      "leukemia",
+      "leukemia, b-cell",
+      "leukemia, biphenotypic, acute",
+      "leukemia, lymphocytic, chronic, b-cell",
+      "leukemia, lymphoid",
+      "leukemia, myelogenous, chronic, bcr-abl positive",
+      "leukemia, myeloid, acute",
+      "leukemia, myeloid, chronic-phase",
+      "leukemia, myelomonocytic, chronic",
+      "leukemia, myelomonocytic, juvenile",
+      "leukemia, t-cell"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Liver Cancer / Hepatocellular Carcinoma": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.025.255",
+      "C04.588.274.623.160",
+      "C06.301.623.160",
+      "C06.552.697.160"
+    ],
+    "mesh_anchors": [
+      "carcinoma, hepatocellular"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Liver Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Lung Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.025.022",
+      "C04.588.894.797.520.055",
+      "C04.588.894.797.520.109.220",
+      "C08.381.540.140",
+      "C08.785.520.100.220"
+    ],
+    "mesh_anchors": [
+      "adenocarcinoma of lung",
+      "carcinoma, bronchogenic"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Lymphoma": {
+    "mesh_tree_prefixes": [
+      "C04.557.386",
+      "C15.604.515.569",
+      "C20.683.515.761"
+    ],
+    "mesh_anchors": [
+      "lymphoma",
+      "lymphoma, b-cell",
+      "lymphoma, b-cell, marginal zone",
+      "lymphoma, extranodal nk-t-cell",
+      "lymphoma, follicular",
+      "lymphoma, large b-cell, diffuse",
+      "lymphoma, large-cell, anaplastic",
+      "lymphoma, mantle-cell",
+      "lymphoma, t-cell",
+      "lymphoma, t-cell, cutaneous",
+      "lymphoma, t-cell, peripheral",
+      "plasmablastic lymphoma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Mantle Cell Lymphoma": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Marginal Zone Lymphoma": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Melanoma": {
+    "mesh_tree_prefixes": [
+      "C04.557.465.625.650.510",
+      "C04.557.580.625.650.510",
+      "C04.557.665.510",
+      "C04.588.364",
+      "C11.319"
+    ],
+    "mesh_anchors": [
+      "eye neoplasms",
+      "melanoma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Merkel Cell Carcinoma": {
+    "mesh_tree_prefixes": [
+      "C02.256.721.150",
+      "C02.928.216",
+      "C04.557.465.625.650.240.325",
+      "C04.557.470.200.025.370.325",
+      "C04.557.580.625.650.240.325"
+    ],
+    "mesh_anchors": [
+      "carcinoma, merkel cell"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Mesothelioma": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.035.510",
+      "C04.557.470.660.510",
+      "C04.588.894.797.640.700",
+      "C08.528.652.700",
+      "C08.528.694.700",
+      "C08.785.640.700"
+    ],
+    "mesh_anchors": [
+      "mesothelioma",
+      "pleural effusion, malignant"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Migraine": {
+    "mesh_tree_prefixes": [
+      "C10.228.140.546.399.750"
+    ],
+    "mesh_anchors": [
+      "migraine disorders"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Multiple Myeloma / Plasma Cell Neoplasm": {
+    "mesh_tree_prefixes": [
+      "C04.557.337.595",
+      "C04.557.595.500",
+      "C04.834.794",
+      "C14.907.454.460",
+      "C15.378.147.542.820",
+      "C15.378.147.780.650",
+      "C15.378.147.780.838",
+      "C15.378.463.515.460",
+      "C20.683.460.820",
+      "C20.683.515.845",
+      "C20.683.780.650",
+      "C20.683.780.838"
+    ],
+    "mesh_anchors": [
+      "leukemia, plasma cell",
+      "multiple myeloma",
+      "smoldering multiple myeloma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Myelodysplastic Syndrome": {
+    "mesh_tree_prefixes": [
+      "C04.588.448.200",
+      "C15.378.190.250",
+      "C15.378.400.200"
+    ],
+    "mesh_anchors": [
+      "bone marrow neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Myeloproliferative Neoplasm": {
+    "mesh_tree_prefixes": [
+      "C04.588.448.200.500",
+      "C15.378.190.250.500",
+      "C15.378.190.636.753",
+      "C15.378.400.200.500"
+    ],
+    "mesh_anchors": [
+      "polycythemia vera"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Neuroendocrine Tumor / Carcinoid Tumor": {
+    "mesh_tree_prefixes": [
+      "C04.557.465.625.650",
+      "C04.557.470.035.100",
+      "C04.557.470.200.025.200",
+      "C04.557.470.200.025.370",
+      "C04.557.580.625.650",
+      "C04.588.274.761.249",
+      "C04.588.322.400.500",
+      "C04.588.322.475.249",
+      "C04.651.600.500",
+      "C04.700.630.500",
+      "C06.301.761.249",
+      "C06.689.667.249",
+      "C16.320.700.630.500",
+      "C19.344.400.500",
+      "C19.344.421.249"
+    ],
+    "mesh_anchors": [
+      "adenoma, islet cell",
+      "carcinoid tumor",
+      "carcinoma, neuroendocrine",
+      "multiple endocrine neoplasia type 1",
+      "neuroendocrine tumors"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Neurologic Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Non-Small Cell Lung Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.588.894.797.520.109.220.249",
+      "C08.381.540.140.500",
+      "C08.785.520.100.220.500"
+    ],
+    "mesh_anchors": [
+      "carcinoma, non-small-cell lung"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Obesity": {
+    "mesh_tree_prefixes": [
+      "C18.654.726.500",
+      "C23.888.144.699.500"
+    ],
+    "mesh_anchors": [
+      "obesity"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Ophthalmic Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Other / Unclassified": {
+    "mesh_tree_prefixes": [
+      "C04.557.386.480.750.800.550",
+      "C04.557.435.380",
+      "C04.557.465.625.600.590.650.550",
+      "C04.557.465.625.650.700.725",
+      "C04.557.470.670.590.650.550",
+      "C04.557.580.600.580",
+      "C04.557.580.625.600.590.650.550",
+      "C04.557.580.625.650.700.725",
+      "C04.557.595.925",
+      "C08.381.495.389",
+      "C10.551.775.500.750",
+      "C10.668.829.725.500.600",
+      "C14.907.454.960",
+      "C15.378.147.780.925",
+      "C15.378.463.515.960",
+      "C15.604.515.569.480.750.800.550",
+      "C15.604.515.925",
+      "C20.683.515.761.480.750.800.550",
+      "C20.683.780.925"
+    ],
+    "mesh_anchors": [
+      "hepatoblastoma",
+      "mycosis fungoides",
+      "neuroblastoma",
+      "neurofibroma",
+      "neurofibroma, plexiform",
+      "pheochromocytoma",
+      "pulmonary disease, chronic obstructive",
+      "waldenstrom macroglobulinemia"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Ovarian / Fallopian Tube / Primary Peritoneal Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.025.480.240",
+      "C04.557.470.200.295",
+      "C04.557.470.590.480.240",
+      "C04.588.322.455",
+      "C04.588.945.418.365",
+      "C13.351.500.056.390.390",
+      "C13.351.500.056.630.705",
+      "C13.351.937.418.365",
+      "C13.351.937.418.685",
+      "C19.344.410",
+      "C19.391.630.705"
+    ],
+    "mesh_anchors": [
+      "carcinoma, ovarian epithelial",
+      "cystadenocarcinoma, serous",
+      "fallopian tube neoplasms",
+      "ovarian neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Pancreatic Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.025.215",
+      "C04.557.470.200.025.232.750",
+      "C04.557.470.615.132.750",
+      "C04.557.470.615.665",
+      "C04.588.274.761",
+      "C04.588.322.475",
+      "C06.301.761",
+      "C06.689.667",
+      "C19.344.421"
+    ],
+    "mesh_anchors": [
+      "carcinoma, acinar cell",
+      "carcinoma, pancreatic ductal",
+      "pancreatic intraductal neoplasms",
+      "pancreatic neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Prostate Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.588.945.440.770",
+      "C12.294.260.750",
+      "C12.294.565.625",
+      "C12.758.409.750"
+    ],
+    "mesh_anchors": [
+      "prostatic neoplasms",
+      "prostatic neoplasms, castration-resistant"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Pruritus": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Psoriasis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Respiratory Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Rheumatoid Arthritis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Sarcoma / Soft Tissue or Bone Tumor": {
+    "mesh_tree_prefixes": [
+      "C04.557.450.550.420",
+      "C04.557.450.565.280",
+      "C04.557.450.565.575.650",
+      "C04.557.450.565.590.340.705",
+      "C04.557.450.565.590.350.590",
+      "C04.557.450.565.835",
+      "C04.557.450.590.455",
+      "C04.557.450.590.550.660",
+      "C04.557.450.590.775",
+      "C04.557.450.795",
+      "C04.557.465.220",
+      "C04.557.465.625.600.380.400",
+      "C04.557.470.670.380.400",
+      "C04.557.580.600.580.590.650",
+      "C04.557.580.600.580.795",
+      "C04.557.580.625.600.380.400",
+      "C04.700.631.650",
+      "C05.360.375",
+      "C05.651.197.369",
+      "C10.551.775.500.750.750",
+      "C10.562.600.500",
+      "C10.574.500.549.400",
+      "C10.668.829.675",
+      "C10.668.829.725.500.600.600",
+      "C16.320.400.560.400",
+      "C16.320.700.633.650",
+      "C17.300.349",
+      "C17.800.321.063"
+    ],
+    "mesh_anchors": [
+      "chondrosarcoma",
+      "chordoma",
+      "fibromatosis, plantar",
+      "gliosarcoma",
+      "leiomyosarcoma",
+      "liposarcoma",
+      "liposarcoma, myxoid",
+      "neurofibromatosis 1",
+      "neurofibrosarcoma",
+      "osteosarcoma",
+      "rhabdomyosarcoma",
+      "sarcoma",
+      "sarcoma, alveolar soft part",
+      "sarcoma, ewing",
+      "sarcoma, synovial"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Sickle Cell Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Small Cell Lung Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.588.894.797.520.109.220.624",
+      "C08.381.540.140.750",
+      "C08.785.520.100.220.750"
+    ],
+    "mesh_anchors": [
+      "small cell lung carcinoma"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Spondyloarthritis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Stroke / Cerebrovascular Disease": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Symptom / Clinical Finding": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Systemic Mastocytosis": {
+    "mesh_tree_prefixes": [
+      "C04.557.450.565.465.750",
+      "C20.543.520.350.750"
+    ],
+    "mesh_anchors": [
+      "mastocytosis, systemic"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Systemic Sclerosis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "T-Cell / NK-Cell Lymphoma": {
+    "mesh_tree_prefixes": [
+      "C04.557.386.480.750.099",
+      "C04.557.386.480.750.800.528",
+      "C04.557.386.480.750.800.775",
+      "C15.604.515.569.480.750.399",
+      "C15.604.515.569.480.750.800.528",
+      "C15.604.515.569.480.750.800.775",
+      "C15.604.515.841",
+      "C20.683.515.761.480.750.199",
+      "C20.683.515.761.480.750.800.528",
+      "C20.683.515.761.480.750.800.775",
+      "C20.683.515.920"
+    ],
+    "mesh_anchors": [
+      "enteropathy-associated t-cell lymphoma",
+      "lymphomatoid papulosis",
+      "sezary syndrome"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Thalassemia": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Thymic Cancer": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Thyroid Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.557.465.625.650.240.315",
+      "C04.557.470.200.025.370.315",
+      "C04.557.470.200.725",
+      "C04.557.470.615.315",
+      "C04.557.580.625.650.240.315",
+      "C04.588.322.894",
+      "C04.588.443.915",
+      "C19.344.894",
+      "C19.874.788"
+    ],
+    "mesh_anchors": [
+      "carcinoma, medullary",
+      "thyroid carcinoma, anaplastic",
+      "thyroid neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Transplantation / Transplant Complication": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Treatment Adverse Event / Toxicity": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Urothelial / Bladder Cancer": {
+    "mesh_tree_prefixes": [
+      "C04.557.470.200.430",
+      "C04.588.945.947.940",
+      "C04.588.945.947.960",
+      "C12.758.820.875",
+      "C12.758.820.968",
+      "C12.777.725.676",
+      "C12.777.829.813",
+      "C13.351.937.820.875",
+      "C13.351.937.820.945",
+      "C13.351.968.725.676",
+      "C13.351.968.829.707"
+    ],
+    "mesh_anchors": [
+      "carcinoma, transitional cell",
+      "ureteral neoplasms",
+      "urinary bladder neoplasms"
+    ],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Urticaria": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Vaginal / Vulvar Cancer": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Vascular Malformation": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  },
+  "Vasculitis": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [],
+    "keywords": [],
+    "therapeutic_area": null
+  }
+}
