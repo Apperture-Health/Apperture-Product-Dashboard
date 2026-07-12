@@ -48921,5 +48921,328 @@
 ],
 "method": "fuzzy",
 "score": 1.0
+},
+"amyloidogenic transthyretin (attr) amyloidosis": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"amyloidosis in transthyretin (ttr)": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"amyloidosis, familial": {
+"mesh": [
+"amyloidosis, familial"
+],
+"method": "exact"
+},
+"amyloidosis, hereditary, transthyretin-related": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"attr-cm": {
+"mesh": [],
+"method": "unresolved",
+"candidates": []
+},
+"attr-pn": {
+"mesh": [],
+"method": "unresolved",
+"candidates": []
+},
+"cardiomyopathies": {
+"mesh": [
+"cardiomyopathies"
+],
+"method": "exact"
+},
+"cardiomyopathy, hypertrophic": {
+"mesh": [
+"cardiomyopathy, hypertrophic"
+],
+"method": "exact"
+},
+"cardiomyopathy, hypertrophic obstructive": {
+"mesh": [
+"cardiomyopathy, hypertrophic"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"chronic kidney diseases": {
+"mesh": [
+"kidney diseases"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"hattr amyloidosis": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"heart diseases": {
+"mesh": [
+"heart diseases"
+],
+"method": "exact"
+},
+"heart failure with preserved ejection fraction": {
+"mesh": [
+"heart failure"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"hereditary transthyretin amyloidosis with polyneuropthy": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"hocm, hypertrophic obstructive cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, hypertrophic"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"hypertrophic cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, hypertrophic"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"left ventricular outflow tract obstruction": {
+"mesh": [
+"ventricular outflow obstruction"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"non-obstructive hypertrophic cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, hypertrophic"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"obstructive cardiomyopathy, hypertrophic": {
+"mesh": [
+"cardiomyopathy, hypertrophic"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"obstructive hypertrophic cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, hypertrophic"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"polyneuropathies": {
+"mesh": [
+"polyneuropathies"
+],
+"method": "exact"
+},
+"symptomatic obstructive hypertrophic cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, hypertrophic"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"transthyretin": {
+"mesh": [],
+"method": "unresolved",
+"candidates": []
+},
+"transthyretin amyloidosis": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"transthyretin amyloidosis (attr) with cardiomyopathy": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"transthyretin-associated amyloidosis with polyneuropathy": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"transthyretin-mediated amyloidosis": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"transthyretin-type cardiac amyloidosis": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"ttr": {
+"mesh": [],
+"method": "unresolved",
+"candidates": []
+},
+"ttr-cm": {
+"mesh": [],
+"method": "unresolved",
+"candidates": []
+},
+"ttr-mediated amyloidosis": {
+"mesh": [
+"amyloidosis"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"type 1 diabetes mellitus (t1dm)": {
+"mesh": [
+"diabetes mellitus"
+],
+"method": "fuzzy",
+"score": 1.0
+},
+"amyloid cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, restrictive"
+],
+"method": "llm"
+},
+"amyloid cardiomyopathy, transthyretin-related": {
+"mesh": [
+"cardiomyopathy, restrictive"
+],
+"method": "llm"
+},
+"cardiac failure aggravated": {
+"mesh": [
+"heart failure"
+],
+"method": "llm"
+},
+"cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, dilated"
+],
+"method": "llm"
+},
+"chronic kidney disease stage 3": {
+"mesh": [
+"kidney failure, chronic"
+],
+"method": "llm"
+},
+"chronic kidney disease stage 4": {
+"mesh": [
+"kidney failure, chronic"
+],
+"method": "llm"
+},
+"familial amyloid polyneuropathy": {
+"mesh": [
+"amyloid neuropathies, familial"
+],
+"method": "llm"
+},
+"heart disease": {
+"mesh": [
+"heart diseases"
+],
+"method": "llm"
+},
+"hereditary transthyretin-mediated amyloid polyneuropathy": {
+"mesh": [
+"amyloid neuropathies, familial"
+],
+"method": "llm"
+},
+"high level of sugar (glucose) in the blood": {
+"mesh": [],
+"method": "unresolved",
+"candidates": [
+"blood loss, surgical",
+"blood protein disorders",
+"blood platelet disorders",
+"blood coagulation disorders",
+"blood coagulation disorders, inherited"
+],
+"llm_tried": true
+},
+"transthyretin (ttr) amyloid cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, restrictive"
+],
+"method": "llm"
+},
+"transthyretin amyloid cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, restrictive"
+],
+"method": "llm"
+},
+"transthyretin amyloid polyneuropathy": {
+"mesh": [
+"amyloid neuropathies"
+],
+"method": "llm"
+},
+"transthyretin amyloid polyneuropathy (attr-pn)": {
+"mesh": [
+"amyloid neuropathies"
+],
+"method": "llm"
+},
+"transthyretin familial amyloid polyneuropathy": {
+"mesh": [
+"amyloid neuropathies, familial"
+],
+"method": "llm"
+},
+"transthyretin-mediated amyloid cardiomyopathy (attr cm)": {
+"mesh": [
+"cardiomyopathy, restrictive"
+],
+"method": "llm"
+},
+"transthyretin-related (attr) familial amyloid polyneuropathy": {
+"mesh": [
+"amyloid neuropathies, familial"
+],
+"method": "llm"
+},
+"ttr cardiomyopathy": {
+"mesh": [
+"cardiomyopathy, restrictive"
+],
+"method": "llm"
 }
 }

@@ -470,7 +470,6 @@
       "Systemic Light Chain Amyloidosis"
     ],
     "mesh_terms": [
-      "amyloidosis",
       "immunoglobulin light-chain amyloidosis"
     ]
   },
@@ -2903,6 +2902,7 @@
       "diabetes mellitus, non insulin dependent",
       "diabetes mellitus, type ii",
       "diabetes, hyperlipidemia, mixed dyslipidemia",
+      "type 1 diabetes mellitus (t1dm)",
       "type 2 diabetes mellitus (t2dm)",
       "type ii diabetes mellitus"
     ],
@@ -3777,6 +3777,21 @@
       "lymphoma, non-hodgkin"
     ]
   },
+  "Hypertrophic Cardiomyopathy": {
+    "conditions": [
+      "cardiomyopathy, hypertrophic",
+      "cardiomyopathy, hypertrophic obstructive",
+      "hocm, hypertrophic obstructive cardiomyopathy",
+      "hypertrophic cardiomyopathy",
+      "non-obstructive hypertrophic cardiomyopathy",
+      "obstructive cardiomyopathy, hypertrophic",
+      "obstructive hypertrophic cardiomyopathy",
+      "symptomatic obstructive hypertrophic cardiomyopathy"
+    ],
+    "mesh_terms": [
+      "cardiomyopathy, hypertrophic"
+    ]
+  },
   "Inflammatory Bowel Disease": {
     "conditions": [
       "Colitis Ulcerative",
@@ -3911,6 +3926,9 @@
       "VHL-Associated Clear Cell Renal Cell Carcinoma",
       "VHL-Associated Renal Cell Carcinoma",
       "chronic kidney disease",
+      "chronic kidney disease stage 3",
+      "chronic kidney disease stage 4",
+      "chronic kidney diseases",
       "kidney failure",
       "kidney transplant"
     ],
@@ -7421,6 +7439,48 @@
     ],
     "mesh_terms": [
       "postoperative complications"
+    ]
+  },
+  "Transthyretin Amyloidosis (ATTR)": {
+    "conditions": [
+      "amyloid cardiomyopathy",
+      "amyloid cardiomyopathy, transthyretin-related",
+      "amyloidogenic transthyretin (attr) amyloidosis",
+      "amyloidosis in transthyretin (ttr)",
+      "amyloidosis, familial",
+      "amyloidosis, hereditary, transthyretin-related",
+      "attr-cm",
+      "attr-pn",
+      "cardiomyopathies",
+      "familial amyloid polyneuropathy",
+      "hattr amyloidosis",
+      "hereditary transthyretin amyloidosis with polyneuropthy",
+      "hereditary transthyretin-mediated amyloid polyneuropathy",
+      "transthyretin",
+      "transthyretin (ttr) amyloid cardiomyopathy",
+      "transthyretin amyloid cardiomyopathy",
+      "transthyretin amyloid polyneuropathy",
+      "transthyretin amyloid polyneuropathy (attr-pn)",
+      "transthyretin amyloidosis",
+      "transthyretin amyloidosis (attr) with cardiomyopathy",
+      "transthyretin familial amyloid polyneuropathy",
+      "transthyretin-associated amyloidosis with polyneuropathy",
+      "transthyretin-mediated amyloid cardiomyopathy (attr cm)",
+      "transthyretin-mediated amyloidosis",
+      "transthyretin-related (attr) familial amyloid polyneuropathy",
+      "transthyretin-type cardiac amyloidosis",
+      "ttr",
+      "ttr cardiomyopathy",
+      "ttr-cm",
+      "ttr-mediated amyloidosis"
+    ],
+    "mesh_terms": [
+      "amyloid neuropathies",
+      "amyloid neuropathies, familial",
+      "amyloidosis",
+      "amyloidosis, familial",
+      "cardiomyopathies",
+      "cardiomyopathy, restrictive"
     ]
   },
   "Treatment Adverse Event / Toxicity": {

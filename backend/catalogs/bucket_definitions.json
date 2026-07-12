@@ -1277,5 +1277,24 @@
     "mesh_anchors": [],
     "keywords": [],
     "therapeutic_area": null
+  },
+  "Transthyretin Amyloidosis (ATTR)": {
+    "mesh_tree_prefixes": [],
+    "mesh_anchors": [
+      "amyloid neuropathies, familial",
+      "amyloidosis, familial"
+    ],
+    "keywords": [],
+    "therapeutic_area": "Cardiology"
+  },
+  "Hypertrophic Cardiomyopathy": {
+    "mesh_tree_prefixes": [
+      "C14.280.238.100"
+    ],
+    "mesh_anchors": [
+      "cardiomyopathy, hypertrophic"
+    ],
+    "keywords": [],
+    "therapeutic_area": "Cardiology"
   }
 }

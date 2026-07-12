@@ -1,7 +1,7 @@
 {
   "22q11 deletion syndrome": [
-    "Biomarker / Molecular Alteration:1",
-    "Other / Unclassified:1"
+    "Other / Unclassified:1",
+    "Biomarker / Molecular Alteration:1"
   ],
   "achondroplasia": [
     "Achondroplasia:1"
@@ -48,8 +48,6 @@
   ],
   "alveolar bone loss": [],
   "alveolitis, extrinsic allergic": [],
-  "amyloid neuropathies, familial": [],
-  "amyloidosis, familial": [],
   "amyotrophic lateral sclerosis": [
     "Amyotrophic Lateral Sclerosis:1"
   ],
@@ -66,8 +64,8 @@
   ],
   "anemia, refractory, with excess of blasts": [
     "Myelodysplastic Syndrome:2",
-    "Blood Disorder / Cytopenia:1",
-    "Clinical / Staging Concept:1"
+    "Clinical / Staging Concept:1",
+    "Blood Disorder / Cytopenia:1"
   ],
   "angina, stable": [
     "Other / Unclassified:1"
@@ -135,8 +133,8 @@
     "Other / Unclassified:1"
   ],
   "bronchial diseases": [
-    "Other / Unclassified:1",
-    "Respiratory Disease:1"
+    "Respiratory Disease:1",
+    "Other / Unclassified:1"
   ],
   "bronchiectasis": [],
   "bronchitis": [
@@ -154,10 +152,7 @@
   "cardiomegaly": [
     "Cardiovascular Disease:1"
   ],
-  "cardiomyopathies": [
-    "Cardiovascular Disease:1"
-  ],
-  "cardiomyopathy, hypertrophic": [],
+  "cardiomyopathy, dilated": [],
   "cardiovascular diseases": [],
   "cartilage diseases": [],
   "cataract": [
@@ -190,8 +185,8 @@
     "Other / Unclassified:1"
   ],
   "clinical deterioration": [
-    "Clinical Pharmacology / Study Design:1",
-    "Other / Unclassified:1"
+    "Other / Unclassified:1",
+    "Clinical Pharmacology / Study Design:1"
   ],
   "clostridium infections": [],
   "cognitive dysfunction": [
@@ -355,8 +350,8 @@
     "Other / Unclassified:1"
   ],
   "food hypersensitivity": [
-    "Allergic Disease:1",
-    "Other / Unclassified:1"
+    "Other / Unclassified:1",
+    "Allergic Disease:1"
   ],
   "fractures, bone": [],
   "fractures, open": [],
@@ -369,8 +364,8 @@
     "Other / Unclassified:1"
   ],
   "gata2 deficiency": [
-    "Obesity:6",
     "Other / Unclassified:6",
+    "Obesity:6",
     "Biomarker / Molecular Alteration:3"
   ],
   "gaucher disease": [],
@@ -383,8 +378,8 @@
   "geographic atrophy": [],
   "gigantism": [],
   "glaucoma, neovascular": [
-    "Ophthalmic Disease:1",
-    "Other / Unclassified:1"
+    "Other / Unclassified:1",
+    "Ophthalmic Disease:1"
   ],
   "glomerulonephritis, iga": [],
   "glomerulosclerosis, focal segmental": [
@@ -603,7 +598,7 @@
   "methemoglobinemia": [],
   "microsatellite instability": [
     "Other / Unclassified:4",
-    "Advanced / Metastatic Solid Tumor:3",
+    "Colorectal Cancer:3",
     "Biomarker / Molecular Alteration:3"
   ],
   "microscopic polyangiitis": [
@@ -738,6 +733,7 @@
   "polymyalgia rheumatica": [
     "Other / Unclassified:1"
   ],
+  "polyneuropathies": [],
   "polyradiculoneuropathy, chronic inflammatory demyelinating": [
     "Other / Unclassified:1"
   ],
@@ -781,8 +777,8 @@
   ],
   "recurrence": [
     "Other / Unclassified:2",
-    "Advanced / Metastatic Solid Tumor:1",
-    "Cancer / Neoplasm:1"
+    "Clinical / Staging Concept:1",
+    "Advanced / Metastatic Solid Tumor:1"
   ],
   "refractive errors": [],
   "renal artery obstruction": [],
@@ -825,8 +821,8 @@
   ],
   "sclerosis": [
     "Hodgkin Lymphoma:4",
-    "Other / Unclassified:2",
-    "Systemic Sclerosis:2"
+    "Systemic Sclerosis:2",
+    "Other / Unclassified:2"
   ],
   "seizures": [],
   "self mutilation": [],
@@ -853,8 +849,8 @@
   ],
   "skin diseases, bacterial": [],
   "skin diseases, genetic": [
-    "Dermatologic / Atopic Condition:1",
-    "Other / Unclassified:1"
+    "Other / Unclassified:1",
+    "Dermatologic / Atopic Condition:1"
   ],
   "skin diseases, infectious": [],
   "skin diseases, papulosquamous": [],
@@ -944,6 +940,7 @@
   "ventricular dysfunction, left": [
     "Other / Unclassified:1"
   ],
+  "ventricular outflow obstruction": [],
   "virus diseases": [
     "Biomarker / Molecular Alteration:1"
   ],

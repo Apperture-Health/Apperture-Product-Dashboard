@@ -147,12 +147,16 @@ export function barFigure(rows: Record<string, unknown>[], xKey: string, yKey: s
         ...baseLayout.xaxis,
         type: horizontal ? "linear" : "category",
         automargin: true,
+        // horizontal → x is the count axis: pin to zero, integer ticks only
+        ...(horizontal ? { rangemode: "tozero", tickformat: ",d" } : {}),
       },
       yaxis: {
         ...baseLayout.yaxis,
         type: horizontal ? "category" : "linear",
         autorange: horizontal ? "reversed" : undefined,
         automargin: true,
+        // vertical → y is the count axis: pin to zero, integer ticks only
+        ...(horizontal ? {} : { rangemode: "tozero", tickformat: ",d" }),
       },
       bargap: horizontal ? 0.28 : 0.22,
     },
@@ -186,8 +190,7 @@ export function multiLineFigure(rows: Record<string, unknown>[], xKey: string, y
       line: { color: colors.sequence[index % colors.sequence.length], width: 2, shape: "hv" },
       marker: { color: colors.sequence[index % colors.sequence.length], size: 4 },
     })),
-    layout: {
-      ...baseLayout,
+    layout: freshLayout({
       legend: {
         orientation: "v",
         yanchor: "top",
@@ -197,7 +200,7 @@ export function multiLineFigure(rows: Record<string, unknown>[], xKey: string, y
         font: { size: 10 },
       },
       margin: { l: 40, r: 160, t: 56, b: 40 },
-    },
+    }),
   };
 }
 
@@ -213,11 +216,10 @@ export function donutFigure(rows: Record<string, unknown>[], labelKey: string, v
         marker: { colors: colors.sequence },
       },
     ],
-    layout: {
-      ...baseLayout,
+    layout: freshLayout({
       legend: { orientation: "v", y: 0.5, x: 1.02 },
       margin: { l: 8, r: 8, t: 48, b: 12 },
-    },
+    }),
   };
 }
 
@@ -343,11 +345,10 @@ export function treemapFigure(rows: Record<string, unknown>[], labelKey: string,
         marker: { colors: colors.sequence },
       },
     ],
-    layout: {
-      ...baseLayout,
+    layout: freshLayout({
       height: BAR_CHART_HEIGHT,
       margin: { l: 8, r: 8, t: 14, b: 8 },
-    },
+    }),
   };
 }
 
@@ -384,7 +385,7 @@ export function areaFigure(rows: Record<string, unknown>[], xKey: string, yKey: 
         line: { color: colors.primary, width: 2.5 },
       },
     ],
-    layout: freshLayout(),
+    layout: freshLayout({ yaxis: { rangemode: "tozero", tickformat: ",d" } }),
   };
 }
 
@@ -404,11 +405,10 @@ export function groupedBarFigure(
       marker: { color: s.color },
       orientation: (horizontal ? "h" : "v") as "h" | "v",
     })),
-    layout: {
-      ...baseLayout,
+    layout: freshLayout({
       barmode: "group",
       margin: horizontal ? { l: 24, r: 24, t: 56, b: 36 } : baseLayout.margin,
-    },
+    }),
   };
 }
 

@@ -23,7 +23,6 @@
     "dementia"
   ],
   "Amyloidosis": [
-    "amyloidosis",
     "immunoglobulin light-chain amyloidosis"
   ],
   "Anal Cancer": [
@@ -305,6 +304,9 @@
   "Hodgkin Lymphoma": [
     "hodgkin disease",
     "lymphoma, non-hodgkin"
+  ],
+  "Hypertrophic Cardiomyopathy": [
+    "cardiomyopathy, hypertrophic"
   ],
   "Inflammatory Bowel Disease": [
     "colitis, ulcerative",
@@ -606,6 +608,14 @@
   ],
   "Transplantation / Transplant Complication": [
     "postoperative complications"
+  ],
+  "Transthyretin Amyloidosis (ATTR)": [
+    "amyloid neuropathies",
+    "amyloid neuropathies, familial",
+    "amyloidosis",
+    "amyloidosis, familial",
+    "cardiomyopathies",
+    "cardiomyopathy, restrictive"
   ],
   "Treatment Adverse Event / Toxicity": [
     "neurotoxicity syndromes"

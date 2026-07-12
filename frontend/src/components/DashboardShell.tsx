@@ -430,6 +430,9 @@ export function DashboardShell() {
         .msd-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: #e2e8f0; cursor: pointer; font-size: 13px; }
         .msd-item:hover { background: rgba(255, 255, 255, 0.08); }
         .msd-item input { accent-color: #8dc7dd; }
+        .msd-item--single { width: 100%; text-align: left; border: none; background: transparent; font: inherit; }
+        .msd-item--single.is-selected { background: rgba(141, 199, 221, 0.22); color: #ffffff; font-weight: 600; }
+        .msd-trigger-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .msd-empty { padding: 14px 10px; color: #cbd5e1; font-size: 13px; text-align: center; }
         .msd-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
         .msd-pill { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 5px 8px 5px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.18); font-size: 12px; }

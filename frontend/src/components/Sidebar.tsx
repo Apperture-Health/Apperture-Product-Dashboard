@@ -6,6 +6,7 @@ import { AuthSession, FilterOptions, FilterState } from "@/lib/types";
 import { hasAnyFilter, activeFilterSummary, getInitials } from "@/lib/transforms";
 import { MultiCheckboxDropdown } from "@/components/ui/MultiCheckboxDropdown";
 import { SidebarSelectField } from "@/components/ui/SidebarSelectField";
+import { SearchableSelectField } from "@/components/ui/SearchableSelectField";
 import { apiRequest } from "@/lib/api";
 
 const CHIP_COLORS: Record<string, string> = {
@@ -185,13 +186,13 @@ export function Sidebar({
         {hasAnyFilter(filters) ? <span className="sidebar-filter-count">{Object.keys(activeFilters).length}</span> : null}
       </div>
 
-      <SidebarSelectField
+      <SearchableSelectField
         label="Condition (Disease Area)"
         value={filters.indication_name ?? ""}
         onChange={(value) => updateFilter("indication_name", value || null)}
         options={["", ...indicationOptions]}
       />
-      <SidebarSelectField
+      <SearchableSelectField
         label="Drug Class (ATC)"
         value={filters.atc_class_name ?? ""}
         onChange={(value) => updateFilter("atc_class_name", value || null)}
