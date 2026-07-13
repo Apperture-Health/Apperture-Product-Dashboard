@@ -153,31 +153,31 @@ export function DashboardShell() {
           <DrugDetailPage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "sponsors" ? (
+        {kpisReady && currentPage.key === "sponsors" ? (
           <SponsorsPage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "trial-design" ? (
+        {kpisReady && currentPage.key === "trial-design" ? (
           <TrialDesignPage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "endpoints" ? (
+        {kpisReady && currentPage.key === "endpoints" ? (
           <EndpointsPage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "outcomes" ? (
+        {kpisReady && currentPage.key === "outcomes" ? (
           <OutcomesPage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "pro-overview" ? (
+        {kpisReady && currentPage.key === "pro-overview" ? (
           <ProOverviewPage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "trial-groups" ? (
+        {kpisReady && currentPage.key === "trial-groups" ? (
           <TrialGroupsPage {...pageProps} />
         ) : null}
 
-        {!pageLoading && currentPage.key === "safety" ? (
+        {kpisReady && currentPage.key === "safety" ? (
           <SafetyPage {...pageProps} />
         ) : null}
 
@@ -193,7 +193,7 @@ export function DashboardShell() {
           />
         ) : null}
 
-        {!pageLoading && currentPage.key === "scores" ? (
+        {kpisReady && currentPage.key === "scores" ? (
           <ScoresPage {...pageProps} />
         ) : null}
 

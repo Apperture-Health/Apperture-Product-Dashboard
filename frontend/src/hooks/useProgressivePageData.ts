@@ -14,6 +14,14 @@ const STREAM_PATH_MAP: Record<string, string> = {
   "drug-pricing":      "/api/pages/drug-pricing/stream",
   "market-access":     "/api/pages/market-access/stream",
   "real-world-safety": "/api/pages/real-world-safety/stream",
+  sponsors:            "/api/pages/sponsors/stream",
+  "trial-design":      "/api/pages/trial-design/stream",
+  endpoints:           "/api/pages/planned-endpoints/stream",
+  outcomes:            "/api/pages/reported-outcomes/stream",
+  scores:              "/api/pages/outcome-scores/stream",
+  "pro-overview":      "/api/pages/pro-overview/stream",
+  "trial-groups":      "/api/pages/trial-groups/stream",
+  safety:              "/api/pages/safety/stream",
 };
 
 function writeCache(

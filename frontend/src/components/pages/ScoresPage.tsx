@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/api";
 import { AgGridTable } from "@/components/ui/AgGridTable";
 import { CsvButton } from "@/components/ui/CsvButton";
 import { MetricRow } from "@/components/ui/MetricRow";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
 import { KeyValueRecord } from "@/lib/types";
 import { PageProps, toRecs } from "./types";
 
@@ -130,6 +131,16 @@ export function ScoresPage({ pageData }: PageProps) {
         <div className="empty-icon">🔎</div>
         <h3>Filter Required</h3>
         <p>Please select at least one filter in the sidebar to view outcome data.</p>
+      </div>
+    );
+  }
+
+  // The trials query streams in after the shell-unblocking chunk. Show a skeleton
+  // until it arrives so the "No Data" state doesn't flash first.
+  if (pageData.trialsWithOutcomes === undefined) {
+    return (
+      <div className="page-stack">
+        <TableSkeleton rows={8} />
       </div>
     );
   }

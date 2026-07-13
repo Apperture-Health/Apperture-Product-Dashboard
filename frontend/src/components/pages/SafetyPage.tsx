@@ -7,6 +7,7 @@ import { apiRequest, pagePayload } from "@/lib/api";
 import { FilterState, KeyValueRecord } from "@/lib/types";
 import { AgGridTable } from "@/components/ui/AgGridTable";
 import { AlertCallout } from "@/components/ui/AlertCallout";
+import { ChartSkeleton } from "@/components/ui/ChartSkeleton";
 import { ChartTile } from "@/components/ui/ChartTile";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { SectionTabs } from "@/components/ui/SectionTabs";
@@ -35,6 +36,7 @@ export function SafetyPage({ filters, pageData, updateFilter }: SafetyPageProps)
   const [detailLoading, setDetailLoading] = useState(false);
 
   const aeAggregates = pageData?.aeAggregates as Record<string, unknown> | undefined;
+  const ready = (key: string) => pageData?.[key] !== undefined;
 
   async function loadDetail() {
     setDetailLoading(true);
@@ -90,25 +92,31 @@ export function SafetyPage({ filters, pageData, updateFilter }: SafetyPageProps)
               onChange={setSubtab}
             />
             {subtab === "terms" ? (
-              <>
-                <TwoCol>
-                  <ChartTile title="Top AE Terms by Trial Count" figure={barFigure(toRecs((aeAggregates as any)?.topAe).slice(0, 15), "adverse_event_term", "trial_count", true)} />
-                  <ChartTile title="Top AE Terms by Subjects Affected" figure={barFigure(toRecs((aeAggregates as any)?.topAe).slice(0, 15), "adverse_event_term", "total_affected", true)} />
-                </TwoCol>
-                <AgGridTable rows={toRecs((aeAggregates as any)?.topAe)} />
-              </>
+              ready("aeAggregates") ? (
+                <>
+                  <TwoCol>
+                    <ChartTile title="Top AE Terms by Trial Count" figure={barFigure(toRecs((aeAggregates as any)?.topAe).slice(0, 15), "adverse_event_term", "trial_count", true)} />
+                    <ChartTile title="Top AE Terms by Subjects Affected" figure={barFigure(toRecs((aeAggregates as any)?.topAe).slice(0, 15), "adverse_event_term", "total_affected", true)} />
+                  </TwoCol>
+                  <AgGridTable rows={toRecs((aeAggregates as any)?.topAe)} />
+                </>
+              ) : <ChartSkeleton />
             ) : null}
             {subtab === "organ" ? (
-              <TwoCol>
-                <ChartTile title="Top 10 Organ Systems by Trial Count" figure={barFigure(toRecs((aeAggregates as any)?.organSystems).slice(0, 10), "organ_system", "trial_count", true)} />
-                <ChartTile title="Top 10 Organ Systems by Subjects Affected" figure={treemapFigure(toRecs((aeAggregates as any)?.organSystems).slice(0, 10), "organ_system", "total_affected")} />
-              </TwoCol>
+              ready("aeAggregates") ? (
+                <TwoCol>
+                  <ChartTile title="Top 10 Organ Systems by Trial Count" figure={barFigure(toRecs((aeAggregates as any)?.organSystems).slice(0, 10), "organ_system", "trial_count", true)} />
+                  <ChartTile title="Top 10 Organ Systems by Subjects Affected" figure={treemapFigure(toRecs((aeAggregates as any)?.organSystems).slice(0, 10), "organ_system", "total_affected")} />
+                </TwoCol>
+              ) : <ChartSkeleton />
             ) : null}
             {subtab === "drug" ? (
-              <TwoCol>
-                <ChartTile title="AE Trials by Drug" figure={barFigure(toRecs(pageData?.aeByDrug), "brand_name", "trial_count", true)} />
-                <ChartTile title="Unique AE Terms per Drug" figure={barFigure(toRecs(pageData?.aeByDrug), "brand_name", "unique_terms", true)} />
-              </TwoCol>
+              ready("aeByDrug") ? (
+                <TwoCol>
+                  <ChartTile title="AE Trials by Drug" figure={barFigure(toRecs(pageData?.aeByDrug), "brand_name", "trial_count", true)} />
+                  <ChartTile title="Unique AE Terms per Drug" figure={barFigure(toRecs(pageData?.aeByDrug), "brand_name", "unique_terms", true)} />
+                </TwoCol>
+              ) : <ChartSkeleton />
             ) : null}
             {subtab === "detail" ? (
               <>

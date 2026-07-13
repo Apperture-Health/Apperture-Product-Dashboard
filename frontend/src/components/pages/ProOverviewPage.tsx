@@ -5,6 +5,7 @@ import { barFigure, donutFigure, funnelFigure } from "@/lib/charts";
 import { hasAnyFilter, proMetrics, sponsorTotals, topProRows } from "@/lib/transforms";
 import { AgGridTable } from "@/components/ui/AgGridTable";
 import { AiSummaryBlock } from "@/components/ui/AiSummaryBlock";
+import { ChartSkeleton } from "@/components/ui/ChartSkeleton";
 import { ChartTile } from "@/components/ui/ChartTile";
 import { MetricRow } from "@/components/ui/MetricRow";
 import { SectionTabs } from "@/components/ui/SectionTabs";
@@ -23,6 +24,7 @@ function filterRequired(message: string) {
 
 export function ProOverviewPage({ filters, pageData, pageSummaries, summaryLoading, requestSummary }: PageProps) {
   const [subtab, setSubtab] = useState("frequency");
+  const ready = (key: string) => pageData?.[key] !== undefined;
 
   return (
     <div className="page-stack">
@@ -42,20 +44,32 @@ export function ProOverviewPage({ filters, pageData, pageSummaries, summaryLoadi
               onChange={setSubtab}
             />
             {subtab === "frequency" ? (
-              <TwoCol>
-                <ChartTile title="Top PRO Instruments (Total)" figure={barFigure(topProRows(toRecs(pageData?.proUsageRaw)), "instrument_name", "total", true)} />
-                <ChartTile title="Instrument Share (Top 10)" figure={donutFigure(topProRows(toRecs(pageData?.proUsageRaw)).slice(0, 10), "instrument_name", "total")} />
-              </TwoCol>
+              ready("proUsageRaw") ? (
+                <TwoCol>
+                  <ChartTile title="Top PRO Instruments (Total)" figure={barFigure(topProRows(toRecs(pageData?.proUsageRaw)), "instrument_name", "total", true)} />
+                  <ChartTile title="Instrument Share (Top 10)" figure={donutFigure(topProRows(toRecs(pageData?.proUsageRaw)).slice(0, 10), "instrument_name", "total")} />
+                </TwoCol>
+              ) : <ChartSkeleton />
             ) : null}
-            {subtab === "funnel" ? (() => {
-              const funnelRows = toRecs(pageData?.reportedProFunnel);
-              return funnelRows.some((row) => Number(row.trial_count ?? 0) > 0)
-                ? <ChartTile title="Planned → Reported PRO Funnel" figure={funnelFigure(funnelRows, "stage", "trial_count")} />
-                : <p style={{ color: "#6B7280", fontSize: 14 }}>No PRO endpoint data for the current filter scope.</p>;
-            })() : null}
-            {subtab === "sponsor" ? <ChartTile title="PRO Adoption by Sponsor" figure={barFigure(sponsorTotals(toRecs(pageData?.proBySponsor)), "sponsor", "trial_count", true)} /> : null}
-            {subtab === "phase" ? <ChartTile title="Trials with Planned PROs by Phase" figure={barFigure(toRecs(pageData?.proByPhase), "phase", "pro_trials")} /> : null}
-            <AgGridTable rows={topProRows(toRecs(pageData?.proUsageRaw))} />
+            {subtab === "funnel" ? (
+              !ready("reportedProFunnel") ? <ChartSkeleton /> : (() => {
+                const funnelRows = toRecs(pageData?.reportedProFunnel);
+                return funnelRows.some((row) => Number(row.trial_count ?? 0) > 0)
+                  ? <ChartTile title="Planned → Reported PRO Funnel" figure={funnelFigure(funnelRows, "stage", "trial_count")} />
+                  : <p style={{ color: "#6B7280", fontSize: 14 }}>No PRO endpoint data for the current filter scope.</p>;
+              })()
+            ) : null}
+            {subtab === "sponsor" ? (
+              ready("proBySponsor")
+                ? <ChartTile title="PRO Adoption by Sponsor" figure={barFigure(sponsorTotals(toRecs(pageData?.proBySponsor)), "sponsor", "trial_count", true)} />
+                : <ChartSkeleton />
+            ) : null}
+            {subtab === "phase" ? (
+              ready("proByPhase")
+                ? <ChartTile title="Trials with Planned PROs by Phase" figure={barFigure(toRecs(pageData?.proByPhase), "phase", "pro_trials")} />
+                : <ChartSkeleton />
+            ) : null}
+            {ready("proUsageRaw") ? <AgGridTable rows={topProRows(toRecs(pageData?.proUsageRaw))} /> : null}
             <AiSummaryBlock pageKey="pro-overview" summary={pageSummaries["pro-overview"]} loading={summaryLoading} onGenerate={() => requestSummary("pro-overview")} />
           </>
         )}

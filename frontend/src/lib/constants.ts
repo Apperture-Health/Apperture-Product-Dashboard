@@ -26,7 +26,8 @@ export type PageGroup = {
 };
 
 export const PAGE_GROUPS: PageGroup[] = [
-  { key: "market",   label: "📊 Market Intelligence", tabKeys: ["pipeline", "drug-detail", "drug-pricing", "market-access", "sponsors"] },
+  { key: "pipeline", label: "📈 Pipeline",            tabKeys: ["pipeline"] },
+  { key: "market",   label: "📊 Market Intelligence", tabKeys: ["drug-detail", "drug-pricing", "market-access", "sponsors"] },
   { key: "design",   label: "🔬 Trial Design",        tabKeys: ["trial-design", "trial-groups"] },
   { key: "evidence", label: "📈 Clinical Evidence",   tabKeys: ["endpoints", "outcomes", "scores", "pro-overview"] },
   { key: "safety",   label: "🛡️ Safety",              tabKeys: ["safety", "real-world-safety"] },

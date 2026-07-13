@@ -816,6 +816,243 @@ async def market_access_page_stream(payload: MarketAccessPageRequest, request: R
     return StreamingResponse(generate(), media_type="application/x-ndjson")
 
 
+# The pages below have no KPI block; the first chunk yields an empty ``kpis`` dict
+# purely to unblock the page shell on the frontend (which flips ``kpisReady`` when
+# a chunk carries a ``kpis`` key), then chart queries stream in as they complete.
+
+
+@api_router.post("/api/pages/sponsors/stream")
+async def sponsors_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
+    _require_auth(request)
+    filters = _filter_state(payload.filters, request)
+
+    async def generate():
+        yield json.dumps({"kpis": {}}) + "\n"
+        if not filters.has_any_filter():
+            # Frontend shows "Filter Required" for these pages; skip the queries.
+            return
+
+        async def _fetch(key, fn, *args):
+            data = await run_in_threadpool(fn, *args)
+            return key, _records(data)
+
+        tasks = [
+            asyncio.create_task(_fetch("trialCounts", get_sponsor_trial_counts, filters, 20)),
+            asyncio.create_task(_fetch("phaseMix", get_sponsor_phase_mix, filters, 15)),
+            asyncio.create_task(_fetch("proAdoption", get_sponsor_pro_adoption, filters, 15)),
+            asyncio.create_task(_fetch("endpointUsage", get_sponsor_endpoint_usage, filters, 10)),
+        ]
+        for future in asyncio.as_completed(tasks):
+            key, data = await future
+            yield json.dumps({key: data}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@api_router.post("/api/pages/trial-design/stream")
+async def trial_design_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
+    _require_auth(request)
+    filters = _filter_state(payload.filters, request)
+
+    async def generate():
+        yield json.dumps({"kpis": {}}) + "\n"
+        if not filters.has_any_filter():
+            # Frontend shows "Filter Required" for these pages; skip the queries.
+            return
+
+        async def _fetch(key, fn, *args):
+            data = await run_in_threadpool(fn, *args)
+            return key, _records(data)
+
+        tasks = [
+            asyncio.create_task(_fetch("designMetrics", get_trial_design_metrics, filters)),
+            asyncio.create_task(_fetch("armsDistribution", get_arms_distribution, filters)),
+            asyncio.create_task(_fetch("eligibilityDistribution", get_eligibility_distribution, filters)),
+        ]
+        for future in asyncio.as_completed(tasks):
+            key, data = await future
+            yield json.dumps({key: data}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@api_router.post("/api/pages/planned-endpoints/stream")
+async def planned_endpoints_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
+    _require_auth(request)
+    filters = _filter_state(payload.filters, request)
+
+    async def generate():
+        yield json.dumps({"kpis": {}}) + "\n"
+        if not filters.has_any_filter():
+            # Frontend shows "Filter Required" for these pages; skip the queries.
+            return
+
+        async def _fetch(key, fn, *args):
+            data = await run_in_threadpool(fn, *args)
+            return key, _records(data)
+
+        async def _fetch_heatmap():
+            heatmap = await run_in_threadpool(get_design_outcome_type_category_heatmap, filters)
+            if heatmap.empty:
+                return "designOutcomeTypeCategoryHeatmap", []
+            melted = heatmap.reset_index().melt(
+                id_vars=["outcome_type"], var_name="outcome_category", value_name="trial_count",
+            )
+            return "designOutcomeTypeCategoryHeatmap", _records(melted)
+
+        tasks = [
+            asyncio.create_task(_fetch_heatmap()),
+            asyncio.create_task(_fetch("topDesignEndpoints", get_top_design_endpoints, filters, 10)),
+            asyncio.create_task(_fetch("reportedProFunnel", get_reported_pro_funnel, filters)),
+            asyncio.create_task(_fetch("designOutcomesTable", get_design_outcomes, filters)),
+        ]
+        for future in asyncio.as_completed(tasks):
+            key, data = await future
+            yield json.dumps({key: data}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@api_router.post("/api/pages/reported-outcomes/stream")
+async def reported_outcomes_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
+    _require_auth(request)
+    filters = _filter_state(payload.filters, request)
+
+    async def generate():
+        yield json.dumps({"kpis": {}}) + "\n"
+        if not filters.has_any_filter():
+            # Frontend shows "Filter Required" for these pages; skip the queries.
+            return
+
+        async def _fetch(key, fn, *args):
+            data = await run_in_threadpool(fn, *args)
+            return key, _records(data)
+
+        async def _fetch_heatmap():
+            heatmap = await run_in_threadpool(get_outcome_type_category_heatmap, filters)
+            if heatmap.empty:
+                return "outcomeTypeCategoryHeatmap", []
+            melted = heatmap.reset_index().melt(
+                id_vars=["outcome_type"], var_name="outcome_category", value_name="trial_count",
+            )
+            return "outcomeTypeCategoryHeatmap", _records(melted)
+
+        tasks = [
+            asyncio.create_task(_fetch("reportedOutcomeCategories", get_reported_outcome_categories, filters)),
+            asyncio.create_task(_fetch_heatmap()),
+            asyncio.create_task(_fetch("reportedProFunnel", get_reported_pro_funnel, filters)),
+        ]
+        for future in asyncio.as_completed(tasks):
+            key, data = await future
+            yield json.dumps({key: data}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@api_router.post("/api/pages/outcome-scores/stream")
+async def outcome_scores_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
+    _require_auth(request)
+    filters = _filter_state(payload.filters, request)
+
+    async def generate():
+        if not filters.has_any_filter():
+            yield json.dumps({"kpis": {}, "trialsWithOutcomes": [], "filterRequired": True}) + "\n"
+            return
+        yield json.dumps({"kpis": {}}) + "\n"
+        trials = await run_in_threadpool(get_trials_with_outcomes, filters)
+        yield json.dumps({"trialsWithOutcomes": _records(trials), "filterRequired": False}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@api_router.post("/api/pages/pro-overview/stream")
+async def pro_overview_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
+    _require_auth(request)
+    filters = _filter_state(payload.filters, request)
+
+    async def generate():
+        yield json.dumps({"kpis": {}}) + "\n"
+        if not filters.has_any_filter():
+            # Frontend shows "Filter Required" for these pages; skip the queries.
+            return
+
+        async def _fetch(key, fn, *args):
+            data = await run_in_threadpool(fn, *args)
+            return key, _records(data)
+
+        tasks = [
+            asyncio.create_task(_fetch("proUsageRaw", get_pro_usage, filters)),
+            asyncio.create_task(_fetch("reportedProFunnel", get_reported_pro_funnel, filters)),
+            asyncio.create_task(_fetch("proBySponsor", get_pro_by_sponsor, filters, 15)),
+            asyncio.create_task(_fetch("proByPhase", get_pro_by_phase, filters)),
+        ]
+        for future in asyncio.as_completed(tasks):
+            key, data = await future
+            yield json.dumps({key: data}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@api_router.post("/api/pages/trial-groups/stream")
+async def trial_groups_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
+    _require_auth(request)
+    filters = _filter_state(payload.filters, request)
+
+    async def generate():
+        yield json.dumps({"kpis": {}}) + "\n"
+        if not filters.has_any_filter():
+            # Frontend shows "Filter Required" for these pages; skip the queries.
+            return
+
+        async def _fetch(key, fn, *args):
+            data = await run_in_threadpool(fn, *args)
+            return key, _records(data)
+
+        tasks = [
+            asyncio.create_task(_fetch("designGroups", get_trial_groups, filters)),
+            asyncio.create_task(_fetch("resultGroups", get_result_groups, filters)),
+            asyncio.create_task(_fetch("groupsPerTrialDistribution", get_groups_per_trial_dist, filters)),
+        ]
+        for future in asyncio.as_completed(tasks):
+            key, data = await future
+            yield json.dumps({key: data}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@api_router.post("/api/pages/safety/stream")
+async def safety_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
+    _require_auth(request)
+    filters = _filter_state(payload.filters, request)
+
+    async def generate():
+        yield json.dumps({"kpis": {}}) + "\n"
+        if not filters.has_any_filter():
+            # Frontend shows "Filter Required" for these pages; skip the queries.
+            return
+
+        async def _fetch(key, fn, *args):
+            data = await run_in_threadpool(fn, *args)
+            return key, _records(data)
+
+        async def _fetch_ae_aggregates():
+            agg = await run_in_threadpool(get_ae_aggregates, filters)
+            return "aeAggregates", {
+                "topAe": _records(agg.get("top_ae")),
+                "organSystems": _records(agg.get("organ")),
+            }
+
+        tasks = [
+            asyncio.create_task(_fetch_ae_aggregates()),
+            asyncio.create_task(_fetch("aeByDrug", get_ae_by_drug, filters, 20)),
+        ]
+        for future in asyncio.as_completed(tasks):
+            key, data = await future
+            yield json.dumps({key: data}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
 # ─── Real World Safety ────────────────────────────────────────────────────────
 
 @api_router.post("/api/pages/real-world-safety")
