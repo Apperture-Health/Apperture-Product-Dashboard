@@ -44,6 +44,10 @@ class _TTLCache:
         with self._lock:
             self._store[key] = (time.time() + ttl, value)
 
+    def clear(self) -> None:
+        with self._lock:
+            self._store.clear()
+
 
 class RuntimeCompat:
     def __init__(self) -> None:
@@ -70,6 +74,12 @@ class RuntimeCompat:
                     with secrets_path.open("rb") as fh:
                         self._secrets = tomllib.load(fh)
         return self._secrets
+
+    def clear_cache(self) -> None:
+        """Drop all cached values. Called after admin user writes so credential /
+        access changes (esp. deactivation) take effect immediately instead of
+        after the 60s TTL."""
+        self._cache.clear()
 
     def cache_data(self, ttl: int = 300, show_spinner: bool = False) -> Callable[[F], F]:
         del show_spinner

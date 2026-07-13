@@ -5,7 +5,7 @@ secrets.toml [users.*] block or the config/user_access.py dict.
 """
 from __future__ import annotations
 
-from api.page_registry import PAGE_MAP
+from api.page_registry import PAGE_MAP, ADMIN_TAB_LABEL
 from data.auth_repository import get_access_dict, get_user_row, verify_password
 
 
@@ -58,15 +58,23 @@ def get_allowed_tabs_for_user(username: str | None) -> list[str]:
         fallback = [label for _, label, _ in PAGE_MAP if _tab_text(label) == "Home"]
         return fallback or ([PAGE_MAP[0][1]] if PAGE_MAP else [])
 
+    # Super-admins see ONLY the User Management tab — nothing else.
+    if cfg.get("is_admin"):
+        return [ADMIN_TAB_LABEL]
+
+    # For everyone else, the admin tab is never available, regardless of their
+    # tab config (defense in depth alongside the server-side endpoint gate).
+    non_admin = [label for _, label, _ in PAGE_MAP if label != ADMIN_TAB_LABEL]
+
     allowed_tabs  = cfg.get("tabs")
     excluded_tabs = cfg.get("tabs_exclude")
 
     if allowed_tabs is not None:
         allowed_text = {_tab_text(t) for t in allowed_tabs}
-        return [label for _, label, _ in PAGE_MAP if _tab_text(label) in allowed_text]
+        return [label for label in non_admin if _tab_text(label) in allowed_text]
 
     if excluded_tabs is not None:
         excluded_text = {_tab_text(t) for t in excluded_tabs}
-        return [label for _, label, _ in PAGE_MAP if _tab_text(label) not in excluded_text]
+        return [label for label in non_admin if _tab_text(label) not in excluded_text]
 
-    return [label for _, label, _ in PAGE_MAP]
+    return non_admin

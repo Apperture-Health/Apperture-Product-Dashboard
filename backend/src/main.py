@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
 from api.routes import api_router
+from api.admin_routes import admin_router
 from utils.preloader import start_background_preload
 from utils.runtime import runtime
 
@@ -20,6 +21,7 @@ def create_app() -> FastAPI:
         https_only=os.getenv("HTTPS_ONLY", "false").lower() == "true",
     )
     app.include_router(api_router)
+    app.include_router(admin_router)
 
     @app.on_event("startup")
     async def _startup() -> None:

@@ -2,6 +2,7 @@ export type AuthSession = {
   authenticated: boolean;
   username?: string | null;
   display_name?: string | null;
+  is_admin?: boolean;
   visible_tabs: string[];
   allowed_indications?: string[] | null;
   allowed_atc_classes?: string[] | null;

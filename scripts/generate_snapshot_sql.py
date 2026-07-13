@@ -12,8 +12,10 @@ Run from the project root:
 
 Output: scripts/snapshot_upsert.sql   (run this file on your database)
 
-Reads user scopes from the auth DB (via backend/src/data/auth_repository.py);
-does NOT execute anything against the KPI database — it only emits SQL.
+The scope-key math and KPI SQL live in backend/src/services/snapshot_sql.py so
+this script, scripts/apply_snapshot_upserts.py, and the admin "Rebuild snapshots"
+endpoint all share one implementation. This script only emits SQL; it does not
+execute anything against the KPI database.
 """
 from __future__ import annotations
 
@@ -21,194 +23,18 @@ import sys
 from pathlib import Path
 from datetime import datetime, timezone
 
-# Allow importing the backend package (auth_repository lives in backend/src).
+# Allow importing the backend package (shared snapshot logic lives in backend/src).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend" / "src"))
 
 from data.auth_repository import get_all_access
-from utils.filters import (
-    get_raw_conditions_for_display_label,
-    build_allowed_indications,
-    build_allowed_atc_classes,
+# Shared SQL builders — single source of truth (build_scope_key is re-exported
+# here for scripts/verify_user_snapshot.py).
+from services.snapshot_sql import (  # noqa: F401
+    resolve_scope,
+    build_scope_key,
+    build_scope_subquery,
+    build_upsert_block,
 )
-from config.settings import CONDITIONS_TABLE, CONDITIONS_NAME_COL
-
-
-def resolve_scope(cfg: dict) -> tuple[list[str] | None, list[str] | None]:
-    """Resolve a user's access dict to the same effective allow-lists the runtime
-    uses (data/repository._build_scope_key reads FilterState.allowed_*).
-
-    Exclusion-mode users (disease_areas_exclude / drug_classes_exclude) must be
-    expanded here too, otherwise the generated scope_key would not match the one
-    the app computes at request time and the snapshot lookup would silently fall
-    back to the 'global' row.
-    """
-    return build_allowed_indications(cfg), build_allowed_atc_classes(cfg)
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def _sql_str(value: str) -> str:
-    """Escape a string literal for SQL (single-quote escaping)."""
-    return "'" + value.replace("'", "''") + "'"
-
-
-def _sql_list(values: list[str]) -> str:
-    """Return a SQL IN-list literal: ('a', 'b', 'c')"""
-    return "(" + ", ".join(_sql_str(v) for v in values) + ")"
-
-
-def build_scope_key(disease_areas: list[str] | None, drug_classes: list[str] | None) -> str:
-    """
-    Deterministic string key for a given access profile.
-    Same inputs always produce the same key, regardless of order.
-    Returns 'global' for fully unrestricted profiles.
-    """
-    parts = []
-    if disease_areas is not None:
-        parts.append("ind:" + "|".join(sorted(disease_areas)))
-    if drug_classes is not None:
-        parts.append("atc:" + "|".join(sorted(drug_classes)))
-    return "__".join(parts) if parts else "global"
-
-
-def build_scope_subquery(disease_areas: list[str] | None, drug_classes: list[str] | None) -> str:
-    """
-    Build the SQL subquery that scopes studies to the given access profile.
-    This mirrors QueryBuilder.nct_subquery_clause():
-      - disease bucket display labels are expanded to their raw condition names
-        (via bucket_catalog) and matched against ctgov.conditions.downcase_name;
-      - ATC classes resolve to brands inline via a JOIN on public.drug_classes.
-
-    Returns a fragment:  s.nct_id IN ( ... )
-    """
-    # No restriction at all — scope to all drug_trials
-    if disease_areas is None and drug_classes is None:
-        return "s.nct_id IN (SELECT DISTINCT nct_id FROM public.drug_trials)"
-
-    joins: list[str] = []
-    wheres: list[str] = []
-
-    # Indication restriction — expand bucket labels → raw condition names, then
-    # JOIN ctgov.conditions (same path the live query uses for allowed_indications).
-    if disease_areas is not None:
-        raw_conditions = sorted({
-            r.lower()
-            for lbl in disease_areas
-            for r in get_raw_conditions_for_display_label(lbl)
-        })
-        joins.append(f"JOIN {CONDITIONS_TABLE} c ON c.nct_id = dt.nct_id")
-        if raw_conditions:
-            wheres.append(f"LOWER(c.{CONDITIONS_NAME_COL}) IN {_sql_list(raw_conditions)}")
-        else:
-            wheres.append("FALSE")
-
-    # ATC class restriction — JOIN drug_classes to resolve brands inline
-    if drug_classes is not None:
-        joins.append(
-            "JOIN public.drug_classes dc ON dc.brand_name = dt.brand_name"
-        )
-        wheres.append(f"dc.atc_class_name IN {_sql_list(drug_classes)}")
-
-    join_sql  = "\n        ".join(joins)
-    where_sql = "WHERE " + "\n          AND ".join(wheres) if wheres else ""
-
-    return f"""s.nct_id IN (
-        SELECT DISTINCT dt.nct_id
-        FROM public.drug_trials dt
-        {join_sql}
-        {where_sql}
-    )"""
-
-
-def build_upsert_block(scope_key: str, scope_subquery: str) -> str:
-    """
-    Generate the full INSERT ... ON CONFLICT DO UPDATE block for one scope.
-    All KPI sub-selects are CTEs so the scope subquery is computed once.
-    """
-    sk = _sql_str(scope_key)
-    now = _sql_str(datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S+00"))
-
-    return f"""\
--- ── Scope: {scope_key} ────────────────────────────────────────────────────────
-INSERT INTO public.overview_kpis_snapshot (
-    scope_key,
-    total_trials,
-    active_trials,
-    completed_trials,
-    trials_with_results,
-    median_enrollment,
-    unique_sponsors,
-    unique_drugs,
-    unique_conditions,
-    trials_with_pros,
-    refreshed_at
-)
-WITH scoped AS (
-    SELECT s.nct_id,
-           s.overall_status,
-           s.enrollment,
-           s.results_first_submitted_date
-    FROM ctgov.studies s
-    WHERE {scope_subquery}
-),
-kpi_main AS (
-    SELECT
-        COUNT(DISTINCT nct_id)                                                         AS total_trials,
-        COUNT(DISTINCT CASE WHEN overall_status IN
-            ('RECRUITING', 'ACTIVE_NOT_RECRUITING') THEN nct_id END)                   AS active_trials,
-        COUNT(DISTINCT CASE WHEN overall_status = 'COMPLETED' THEN nct_id END)         AS completed_trials,
-        COUNT(DISTINCT CASE WHEN results_first_submitted_date IS NOT NULL
-            THEN nct_id END)                                                           AS trials_with_results,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY enrollment)                        AS median_enrollment
-    FROM scoped
-),
-kpi_sponsors AS (
-    SELECT COUNT(DISTINCT sp.name) AS unique_sponsors
-    FROM ctgov.sponsors sp
-    WHERE sp.nct_id IN (SELECT nct_id FROM scoped)
-      AND sp.lead_or_collaborator = 'lead'
-),
-kpi_drugs AS (
-    SELECT COUNT(DISTINCT dt.brand_name) AS unique_drugs
-    FROM public.drug_trials dt
-    WHERE dt.nct_id IN (SELECT nct_id FROM scoped)
-),
-kpi_conditions AS (
-    SELECT COUNT(DISTINCT bc.downcase_mesh_term) AS unique_conditions
-    FROM ctgov.browse_conditions bc
-    WHERE bc.nct_id IN (SELECT nct_id FROM scoped)
-      AND bc.mesh_type = 'mesh-list'
-),
-kpi_pros AS (
-    SELECT COUNT(DISTINCT p.nct_id) AS trials_with_pros
-    FROM public.drug_trial_design_outcomes_pro p
-    WHERE p.nct_id IN (SELECT nct_id FROM scoped)
-)
-SELECT
-    {sk},
-    kpi_main.total_trials,
-    kpi_main.active_trials,
-    kpi_main.completed_trials,
-    kpi_main.trials_with_results,
-    kpi_main.median_enrollment,
-    kpi_sponsors.unique_sponsors,
-    kpi_drugs.unique_drugs,
-    kpi_conditions.unique_conditions,
-    kpi_pros.trials_with_pros,
-    {now}::timestamptz
-FROM kpi_main, kpi_sponsors, kpi_drugs, kpi_conditions, kpi_pros
-ON CONFLICT (scope_key) DO UPDATE SET
-    total_trials        = EXCLUDED.total_trials,
-    active_trials       = EXCLUDED.active_trials,
-    completed_trials    = EXCLUDED.completed_trials,
-    trials_with_results = EXCLUDED.trials_with_results,
-    median_enrollment   = EXCLUDED.median_enrollment,
-    unique_sponsors     = EXCLUDED.unique_sponsors,
-    unique_drugs        = EXCLUDED.unique_drugs,
-    unique_conditions   = EXCLUDED.unique_conditions,
-    trials_with_pros    = EXCLUDED.trials_with_pros,
-    refreshed_at        = EXCLUDED.refreshed_at;
-"""
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -268,16 +94,13 @@ ALTER TABLE public.overview_kpis_snapshot
     # Collect unique profiles — deduplicate by scope_key so users with identical
     # access don't generate duplicate SQL blocks.
     seen: dict[str, tuple] = {}   # scope_key → (disease_areas, drug_classes)
-
     for username, cfg in user_access.items():
         disease_areas, drug_classes = resolve_scope(cfg)
         key = build_scope_key(disease_areas, drug_classes)
-        if key not in seen:
-            seen[key] = (disease_areas, drug_classes)
+        seen.setdefault(key, (disease_areas, drug_classes))
 
     # Always include global
-    if "global" not in seen:
-        seen["global"] = (None, None)
+    seen.setdefault("global", (None, None))
 
     # Sort so global comes first, then alphabetically
     ordered = sorted(seen.items(), key=lambda kv: (kv[0] != "global", kv[0]))

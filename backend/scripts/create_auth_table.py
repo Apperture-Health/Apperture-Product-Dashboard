@@ -2,7 +2,8 @@
 Create the auth schema in the `auth` database: one credentials table plus one
 table per multi-valued access attribute (one row per user/value pair).
 
-Run once, after the empty `auth` database exists on the Cloud SQL instance.
+Run after the `auth` database exists on the Cloud SQL instance. The script is
+idempotent and also upgrades an older `user_creds` table with new auth columns.
 Uses the existing app connector credentials, so the app DB user must be able to
 CREATE TABLE in the `auth` database.
 
@@ -24,9 +25,14 @@ CREATE TABLE IF NOT EXISTS user_creds (
   password     text        NOT NULL,          -- plain text (project requirement)
   display_name text,
   is_active    boolean     NOT NULL DEFAULT true,
+  is_admin     boolean     NOT NULL DEFAULT false,
   created_at   timestamptz NOT NULL DEFAULT now(),
   updated_at   timestamptz NOT NULL DEFAULT now()
 );
+
+-- CREATE TABLE IF NOT EXISTS does not add columns to an existing table.
+ALTER TABLE user_creds
+  ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS user_tabs (
   username text NOT NULL REFERENCES user_creds(username) ON DELETE CASCADE,
@@ -55,7 +61,8 @@ def main() -> None:
     eng = get_engine("auth")
     with eng.begin() as conn:
         conn.execute(text(DDL))
-    print("auth schema ready: user_creds, user_tabs, user_disease_areas, user_drug_classes")
+    print("auth schema ready: user_creds (including is_admin), user_tabs, "
+          "user_disease_areas, user_drug_classes")
 
 
 if __name__ == "__main__":

@@ -49,6 +49,7 @@ type SidebarProps = {
   resetFilters: () => void;
   onLogout: () => void;
   onApplyFilters: (extracted: Record<string, unknown>) => void;
+  minimal?: boolean;
 };
 
 export function Sidebar({
@@ -60,6 +61,7 @@ export function Sidebar({
   resetFilters,
   onLogout,
   onApplyFilters,
+  minimal = false,
 }: SidebarProps) {
   const indicationOptions = session.allowed_indications ?? filterOptions.indications;
   const atcClassOptions = session.allowed_atc_classes ?? filterOptions.atc_classes;
@@ -109,6 +111,12 @@ export function Sidebar({
         <button className="user-signout-btn" onClick={onLogout} title="Sign out">⏻</button>
       </div>
 
+      {minimal ? (
+        <div className="sidebar-admin-note">
+          Admin console — user &amp; access management. Filters do not apply here.
+        </div>
+      ) : (
+      <>
       {/* ── Ask the Data ─────────────────────────────────────────────── */}
       <div className="ask-sidebar-section">
         <div className="ask-sidebar-label">💬 Ask the Data</div>
@@ -279,6 +287,8 @@ export function Sidebar({
         🔄 Reset All Filters
       </button>
       {filtersLoading ? <div className="sidebar-loading">Refreshing options…</div> : null}
+      </>
+      )}
     </aside>
   );
 }

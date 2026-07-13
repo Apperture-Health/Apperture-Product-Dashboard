@@ -4,7 +4,13 @@
 
 1. Create a virtual environment and install `backend/requirements.txt`.
 2. Keep the existing `.streamlit/secrets.toml` file in place. The FastAPI backend reads the same credentials, database settings, and OpenAI key.
-3. Start the API from the repo root:
+3. Create or upgrade the auth schema. This command is idempotent and ensures that `user_creds.is_admin` exists:
+
+```powershell
+python backend/scripts/create_auth_table.py
+```
+
+4. Start the API from the repo root:
 
 ```powershell
 uvicorn backend.main:app --reload

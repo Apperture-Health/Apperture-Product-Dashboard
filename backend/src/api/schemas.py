@@ -14,6 +14,7 @@ class AuthSessionDTO(BaseModel):
     authenticated: bool
     username: str | None = None
     display_name: str | None = None
+    is_admin: bool = False
     visible_tabs: list[str] = Field(default_factory=list)
     allowed_indications: list[str] | None = None
     allowed_atc_classes: list[str] | None = None

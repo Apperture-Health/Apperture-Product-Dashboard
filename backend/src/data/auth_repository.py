@@ -36,6 +36,7 @@ _ATTR_TABLES = (
 # Access-policy fields (everything except credentials) in the reconstructed dict.
 _ACCESS_FIELDS = (
     "display_name",
+    "is_admin",
     "tabs",
     "tabs_exclude",
     "disease_areas",
@@ -62,7 +63,7 @@ def get_user_row(username: str) -> dict | None:
     with eng.connect() as conn:
         creds = conn.execute(
             text(
-                "SELECT username, password, display_name, is_active "
+                "SELECT username, password, display_name, is_active, is_admin "
                 "FROM user_creds WHERE username = :u AND is_active"
             ),
             {"u": username},
@@ -108,6 +109,54 @@ def get_all_access() -> dict[str, dict]:
     """Map every active username to its access dict — a DB-backed replacement for
     the old USER_ACCESS module dict (same per-user shape)."""
     return {u: get_access_dict(u) for u in list_usernames()}
+
+
+def list_all_users_full() -> list[dict]:
+    """Every user (active AND inactive) with credentials + full access breakdown,
+    for the admin User-Management view. Read UNCACHED so an admin always sees the
+    current DB state immediately after a write (the 60s cache on get_user_row only
+    affects other users' live sessions).
+
+    Each entry: username, password, display_name, is_active, is_admin, and, per
+    attribute, include/exclude lists (e.g. tabs / tabs_exclude)."""
+    eng = get_engine(_AUTH_DB)
+    with eng.connect() as conn:
+        creds = conn.execute(
+            text(
+                "SELECT username, password, display_name, is_active, is_admin "
+                "FROM user_creds ORDER BY username"
+            )
+        ).mappings().all()
+
+        users: list[dict] = []
+        for cred in creds:
+            row: dict = dict(cred)
+            un = row["username"]
+            for table, value_col, inc_key, exc_key in _ATTR_TABLES:
+                attr_rows = conn.execute(
+                    text(f"SELECT {value_col} AS value, mode FROM {table} WHERE username = :u"),
+                    {"u": un},
+                ).mappings().all()
+                row[inc_key] = [r["value"] for r in attr_rows if r["mode"] == "include"]
+                row[exc_key] = [r["value"] for r in attr_rows if r["mode"] == "exclude"]
+            users.append(row)
+    return users
+
+
+def count_active_admins(exclude_username: str | None = None) -> int:
+    """Number of active admins, optionally excluding one username. Used to prevent
+    removing/demoting the last remaining admin (lockout guard)."""
+    eng = get_engine(_AUTH_DB)
+    with eng.connect() as conn:
+        if exclude_username:
+            return int(conn.execute(
+                text("SELECT COUNT(*) FROM user_creds "
+                     "WHERE is_active AND is_admin AND username <> :u"),
+                {"u": exclude_username},
+            ).scalar() or 0)
+        return int(conn.execute(
+            text("SELECT COUNT(*) FROM user_creds WHERE is_active AND is_admin")
+        ).scalar() or 0)
 
 
 def verify_password(plain: str, stored: str) -> bool:

@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
-from api.page_registry import PAGE_MAP
+from api.page_registry import PAGE_MAP, PAGE_LABEL_BY_KEY
 from api.schemas import (
     AiExtractRequest,
     AiExtractResponse,
@@ -93,6 +93,7 @@ from services.ai_summary import (
 )
 from services.analytics import aggregate_pro_usage
 from services.pro_analysis import planned_vs_reported_pivot, top_instruments
+from data.auth_repository import get_user_row
 from utils.auth import authenticate, get_allowed_tabs_for_user, get_user_access
 from utils.filters import FilterState, build_allowed_indications, build_allowed_atc_classes, get_unique_display_labels
 from utils.runtime import runtime
@@ -115,9 +116,13 @@ def _catalog_path(filename: str) -> Path:
 
 def _user_access_from_session(session: dict) -> tuple[list[str] | None, list[str] | None]:
     """Recompute allowed_indications/atc_classes from username — never read them
-    from the cookie, because large lists push the cookie over the 4 KB browser limit."""
+    from the cookie, because large lists push the cookie over the 4 KB browser
+    limit. Reject missing/inactive users instead of interpreting missing access
+    as unrestricted access."""
     username = session.get("username")
-    access = get_user_access(username) if username else {}
+    if not username or get_user_row(username) is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    access = get_user_access(username)
     return build_allowed_indications(access), build_allowed_atc_classes(access)
 
 
@@ -157,6 +162,32 @@ def _require_auth(request: Request) -> dict:
     auth = request.session.get("auth")
     if not auth:
         raise HTTPException(status_code=401, detail="Authentication required")
+    username = auth.get("username")
+    if not username or get_user_row(username) is None:
+        # A valid signed cookie is not sufficient after an account is removed or
+        # deactivated. Clear it so subsequent browser requests are logged out too.
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return auth
+
+
+def _require_page_access(request: Request, page_key: str) -> dict:
+    """Require an active session with access to the requested dashboard page."""
+    auth = _require_auth(request)
+    label = PAGE_LABEL_BY_KEY.get(page_key)
+    if label is None:
+        raise HTTPException(status_code=404, detail="Page not found")
+    if label not in get_allowed_tabs_for_user(auth.get("username")):
+        raise HTTPException(status_code=403, detail="Access to this page is not allowed")
+    return auth
+
+
+def _require_non_admin(request: Request) -> dict:
+    """Require a normal dashboard user for always-available sidebar features."""
+    auth = _require_auth(request)
+    row = get_user_row(auth.get("username"))
+    if row and row.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Feature unavailable for admin accounts")
     return auth
 
 
@@ -167,10 +198,22 @@ def _session_payload(username: str) -> AuthSessionDTO:
         authenticated=True,
         username=username,
         display_name=access.get("display_name", username.capitalize()),
+        is_admin=bool(access.get("is_admin")),
         visible_tabs=visible_tabs,
         allowed_indications=build_allowed_indications(access),
         allowed_atc_classes=build_allowed_atc_classes(access),
     )
+
+
+def _session_cookie_payload(session: AuthSessionDTO) -> dict:
+    """Keep the signed cookie small; access lists are recomputed from the DB."""
+    return {
+        "authenticated": session.authenticated,
+        "username": session.username,
+        "display_name": session.display_name,
+        "is_admin": session.is_admin,
+        "visible_tabs": session.visible_tabs,
+    }
 
 
 def _records(df) -> list[dict]:
@@ -192,12 +235,7 @@ def login(payload: AuthLoginRequest, request: Request) -> AuthSessionDTO:
     session = _session_payload(payload.username)
     # Store only small fields in the cookie — allowed_indications can be 100+ strings
     # which pushes the cookie over the 4 KB browser limit and causes silent auth failures.
-    request.session["auth"] = {
-        "authenticated": session.authenticated,
-        "username": session.username,
-        "display_name": session.display_name,
-        "visible_tabs": session.visible_tabs,
-    }
+    request.session["auth"] = _session_cookie_payload(session)
     return session
 
 
@@ -212,12 +250,17 @@ def me(request: Request) -> AuthSessionDTO:
     auth = request.session.get("auth")
     if not auth:
         return AuthSessionDTO(authenticated=False)
-    allowed_indications, allowed_atc_classes = _user_access_from_session(auth)
-    return AuthSessionDTO(
-        **auth,
-        allowed_indications=allowed_indications,
-        allowed_atc_classes=allowed_atc_classes,
-    )
+    username = auth.get("username")
+    if not username or get_user_row(username) is None:
+        request.session.clear()
+        return AuthSessionDTO(authenticated=False)
+
+    # Refresh role, display name, and visible tabs from the database as well as
+    # the larger access lists. This prevents a valid cookie from preserving stale
+    # privileges after an administrator changes the account.
+    session = _session_payload(username)
+    request.session["auth"] = _session_cookie_payload(session)
+    return session
 
 
 @api_router.get("/api/meta/pages")
@@ -349,13 +392,13 @@ def _extract_filters(question: str) -> dict:
 
 @api_router.post("/api/ai/extract-filters", response_model=AiExtractResponse)
 def ai_extract_filters(payload: AiExtractRequest, request: Request) -> AiExtractResponse:
-    _require_auth(request)
+    _require_non_admin(request)
     return AiExtractResponse(extracted=_extract_filters(payload.question.strip()))
 
 
 @api_router.post("/api/pages/home")
 def home_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "home")
     filters = _filter_state(payload.filters, request)
     kpis = get_overview_kpis(filters)
     if not filters.has_any_filter():
@@ -382,7 +425,7 @@ def home_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/pipeline")
 def pipeline_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "pipeline")
     filters = _filter_state(payload.filters, request)
     bucket = filters.indication_name
     sponsors = tuple(filters.sponsor)
@@ -405,7 +448,7 @@ def pipeline_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/drug-detail")
 def drug_detail_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "drug-detail")
     filters = _filter_state(payload.filters, request)
     phase_heat = get_drug_phase_brand_heatmap(filters)
     phase_heat_records: list[dict] = []
@@ -427,7 +470,7 @@ def drug_detail_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/drug-pricing")
 def drug_pricing_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "drug-pricing")
     filters = _filter_state(payload.filters, request)
     return {
         "kpis": get_pricing_kpis(filters),
@@ -440,7 +483,7 @@ def drug_pricing_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/market-access")
 def market_access_page(payload: MarketAccessPageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "market-access")
     filters = _filter_state(payload.filters, request)
     return {
         "kpis": get_ma_kpis(filters, year=payload.year),
@@ -452,7 +495,7 @@ def market_access_page(payload: MarketAccessPageRequest, request: Request) -> di
 
 @api_router.post("/api/pages/sponsors")
 def sponsors_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "sponsors")
     filters = _filter_state(payload.filters, request)
     return {
         "trialCounts": _records(get_sponsor_trial_counts(filters, limit=20)),
@@ -464,7 +507,7 @@ def sponsors_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/trial-design")
 def trial_design_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "trial-design")
     filters = _filter_state(payload.filters, request)
     return {
         "designMetrics": _records(get_trial_design_metrics(filters)),
@@ -475,7 +518,7 @@ def trial_design_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/planned-endpoints")
 def planned_endpoints_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "endpoints")
     filters = _filter_state(payload.filters, request)
     heatmap = get_design_outcome_type_category_heatmap(filters)
     heatmap_records: list[dict] = []
@@ -496,7 +539,7 @@ def planned_endpoints_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/reported-outcomes")
 def reported_outcomes_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "outcomes")
     filters = _filter_state(payload.filters, request)
     heatmap = get_outcome_type_category_heatmap(filters)
     heatmap_records: list[dict] = []
@@ -516,7 +559,7 @@ def reported_outcomes_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/outcome-scores")
 def outcome_scores_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "scores")
     filters = _filter_state(payload.filters, request)
     if not filters.has_any_filter():
         return {"trialsWithOutcomes": [], "filterRequired": True}
@@ -528,13 +571,13 @@ def outcome_scores_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.get("/api/pages/outcome-scores/trial/{nct_id}")
 def outcome_scores_trial(nct_id: str, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "scores")
     return {"outcomeData": _records(get_outcome_data_for_trial(nct_id))}
 
 
 @api_router.post("/api/pages/pro-overview")
 def pro_overview_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "pro-overview")
     filters = _filter_state(payload.filters, request)
     return {
         "proUsageRaw": _records(get_pro_usage(filters)),
@@ -546,7 +589,7 @@ def pro_overview_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/trial-groups")
 def trial_groups_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "trial-groups")
     filters = _filter_state(payload.filters, request)
     return {
         "designGroups": _records(get_trial_groups(filters)),
@@ -557,7 +600,7 @@ def trial_groups_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/safety")
 def safety_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "safety")
     filters = _filter_state(payload.filters, request)
     ae_aggregates = get_ae_aggregates(filters)
     return {
@@ -571,7 +614,7 @@ def safety_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/safety/detail")
 def safety_detail_page(payload: SafetyDetailRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "safety")
     filters = _filter_state(payload.filters, request)
     return {
         "detail": _records(get_ae_detail_table(filters, payload.organ_system, payload.ae_term)),
@@ -580,9 +623,9 @@ def safety_detail_page(payload: SafetyDetailRequest, request: Request) -> dict:
 
 @api_router.post("/api/ai/page-summary/{page_key}")
 def ai_page_summary(page_key: str, payload: AiPageSummaryRequest, request: Request) -> dict[str, str]:
-    _require_auth(request)
-    filters = _filter_state(payload.filters, request)
     page_key = page_key.lower()
+    _require_page_access(request, page_key)
+    filters = _filter_state(payload.filters, request)
 
     if page_key == "drug-detail":
         kpis = get_overview_kpis(filters)
@@ -658,7 +701,7 @@ def ai_page_summary(page_key: str, payload: AiPageSummaryRequest, request: Reque
 
 @api_router.post("/api/pages/home/stream")
 async def home_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "home")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -694,7 +737,7 @@ async def home_page_stream(payload: PageRequest, request: Request) -> StreamingR
 
 @api_router.post("/api/pages/pipeline/stream")
 async def pipeline_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "pipeline")
     filters = _filter_state(payload.filters, request)
     bucket = filters.indication_name
     sponsors = tuple(filters.sponsor)
@@ -732,7 +775,7 @@ async def pipeline_page_stream(payload: PageRequest, request: Request) -> Stream
 
 @api_router.post("/api/pages/drug-detail/stream")
 async def drug_detail_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "drug-detail")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -767,7 +810,7 @@ async def drug_detail_page_stream(payload: PageRequest, request: Request) -> Str
 
 @api_router.post("/api/pages/drug-pricing/stream")
 async def drug_pricing_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "drug-pricing")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -793,7 +836,7 @@ async def drug_pricing_page_stream(payload: PageRequest, request: Request) -> St
 
 @api_router.post("/api/pages/market-access/stream")
 async def market_access_page_stream(payload: MarketAccessPageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "market-access")
     filters = _filter_state(payload.filters, request)
     year = payload.year
 
@@ -823,7 +866,7 @@ async def market_access_page_stream(payload: MarketAccessPageRequest, request: R
 
 @api_router.post("/api/pages/sponsors/stream")
 async def sponsors_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "sponsors")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -851,7 +894,7 @@ async def sponsors_page_stream(payload: PageRequest, request: Request) -> Stream
 
 @api_router.post("/api/pages/trial-design/stream")
 async def trial_design_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "trial-design")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -878,7 +921,7 @@ async def trial_design_page_stream(payload: PageRequest, request: Request) -> St
 
 @api_router.post("/api/pages/planned-endpoints/stream")
 async def planned_endpoints_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "endpoints")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -915,7 +958,7 @@ async def planned_endpoints_page_stream(payload: PageRequest, request: Request) 
 
 @api_router.post("/api/pages/reported-outcomes/stream")
 async def reported_outcomes_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "outcomes")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -951,7 +994,7 @@ async def reported_outcomes_page_stream(payload: PageRequest, request: Request) 
 
 @api_router.post("/api/pages/outcome-scores/stream")
 async def outcome_scores_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "scores")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -967,7 +1010,7 @@ async def outcome_scores_page_stream(payload: PageRequest, request: Request) -> 
 
 @api_router.post("/api/pages/pro-overview/stream")
 async def pro_overview_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "pro-overview")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -995,7 +1038,7 @@ async def pro_overview_page_stream(payload: PageRequest, request: Request) -> St
 
 @api_router.post("/api/pages/trial-groups/stream")
 async def trial_groups_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "trial-groups")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -1022,7 +1065,7 @@ async def trial_groups_page_stream(payload: PageRequest, request: Request) -> St
 
 @api_router.post("/api/pages/safety/stream")
 async def safety_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "safety")
     filters = _filter_state(payload.filters, request)
 
     async def generate():
@@ -1057,7 +1100,7 @@ async def safety_page_stream(payload: PageRequest, request: Request) -> Streamin
 
 @api_router.post("/api/pages/real-world-safety")
 def real_world_safety_page(payload: PageRequest, request: Request) -> dict:
-    _require_auth(request)
+    _require_page_access(request, "real-world-safety")
     filters = _filter_state(payload.filters, request)
 
     if not filters.has_any_filter():
@@ -1105,7 +1148,7 @@ def real_world_safety_page(payload: PageRequest, request: Request) -> dict:
 
 @api_router.post("/api/pages/real-world-safety/stream")
 async def real_world_safety_page_stream(payload: PageRequest, request: Request) -> StreamingResponse:
-    _require_auth(request)
+    _require_page_access(request, "real-world-safety")
     filters = _filter_state(payload.filters, request)
 
     async def generate():

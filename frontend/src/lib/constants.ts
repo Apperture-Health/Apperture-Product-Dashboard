@@ -15,6 +15,7 @@ export const PAGE_META: PageMeta[] = [
   { key: "trial-groups", label: "🗂️ Trial Groups", title: "Trial Groups" },
   { key: "safety", label: "🛡️ Safety", title: "Safety Analysis" },
   { key: "real-world-safety", label: "🌐 Real World Safety", title: "FAERS Post-Market Safety" },
+  { key: "user-management", label: "🔐 User Management", title: "User Management" },
 ];
 
 export const HOME_KEY = "home";
@@ -31,6 +32,7 @@ export const PAGE_GROUPS: PageGroup[] = [
   { key: "design",   label: "🔬 Trial Design",        tabKeys: ["trial-design", "trial-groups"] },
   { key: "evidence", label: "📈 Clinical Evidence",   tabKeys: ["endpoints", "outcomes", "scores", "pro-overview"] },
   { key: "safety",   label: "🛡️ Safety",              tabKeys: ["safety", "real-world-safety"] },
+  { key: "admin",    label: "🔐 User Management",      tabKeys: ["user-management"] },
 ];
 
 export const PAGE_SUBTITLES: Record<string, string> = {
@@ -49,6 +51,7 @@ export const PAGE_SUBTITLES: Record<string, string> = {
   safety: "Adverse event reporting: terms, organ systems, drug associations, and incidence analysis.",
   "real-world-safety": "Post-market spontaneous safety reports from FDA FAERS.",
   "ask-the-data": "Ask a question about the clinical trial landscape — filters are applied automatically across all tabs.",
+  "user-management": "Manage dashboard users: logins, tab access, disease-area scope, and KPI snapshots.",
 };
 
 export const MODULE_DESC: Record<string, string> = {
