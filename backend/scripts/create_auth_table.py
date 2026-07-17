@@ -54,6 +54,35 @@ CREATE TABLE IF NOT EXISTS user_drug_classes (
   mode       text NOT NULL DEFAULT 'include' CHECK (mode IN ('include','exclude')),
   PRIMARY KEY (username, drug_class)
 );
+
+-- Usage logging. One session row per login (login_at = when the user logged in),
+-- and one tab-visit row per tab open, linked to its session. Admins are excluded
+-- at the application layer, so no rows are written for is_admin accounts.
+CREATE TABLE IF NOT EXISTS user_sessions (
+  session_id text        PRIMARY KEY,          -- uuid minted at login
+  username   text        NOT NULL REFERENCES user_creds(username) ON DELETE CASCADE,
+  login_at   timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_user_sessions_username_time
+  ON user_sessions (username, login_at DESC);
+CREATE INDEX IF NOT EXISTS ix_user_sessions_time
+  ON user_sessions (login_at DESC);
+
+CREATE TABLE IF NOT EXISTS user_tab_visits (
+  id         bigserial   PRIMARY KEY,
+  username   text        NOT NULL REFERENCES user_creds(username) ON DELETE CASCADE,
+  tab        text        NOT NULL,             -- tab key, e.g. 'pipeline'
+  visited_at timestamptz NOT NULL DEFAULT now()
+);
+-- Link each visit to its session (added after the table's original definition).
+ALTER TABLE user_tab_visits
+  ADD COLUMN IF NOT EXISTS session_id text;
+CREATE INDEX IF NOT EXISTS ix_user_tab_visits_username_time
+  ON user_tab_visits (username, visited_at DESC);
+CREATE INDEX IF NOT EXISTS ix_user_tab_visits_time
+  ON user_tab_visits (visited_at DESC);
+CREATE INDEX IF NOT EXISTS ix_user_tab_visits_session
+  ON user_tab_visits (session_id);
 """
 
 
@@ -62,7 +91,7 @@ def main() -> None:
     with eng.begin() as conn:
         conn.execute(text(DDL))
     print("auth schema ready: user_creds (including is_admin), user_tabs, "
-          "user_disease_areas, user_drug_classes")
+          "user_disease_areas, user_drug_classes, user_sessions, user_tab_visits")
 
 
 if __name__ == "__main__":

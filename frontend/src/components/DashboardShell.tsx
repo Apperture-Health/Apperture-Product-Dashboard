@@ -1,7 +1,8 @@
 "use client";
 
-import { startTransition, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { apiRequest } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useFilters } from "@/hooks/useFilters";
 import { useProgressivePageData } from "@/hooks/useProgressivePageData";
@@ -33,6 +34,7 @@ import { SafetyPage } from "@/components/pages/SafetyPage";
 import { ScoresPage } from "@/components/pages/ScoresPage";
 import { RealWorldSafetyPage } from "@/components/pages/RealWorldSafetyPage";
 import { UserManagementPage } from "@/components/pages/UserManagementPage";
+import { ActivityLogPage } from "@/components/pages/ActivityLogPage";
 
 export function DashboardShell() {
   const router = useRouter();
@@ -68,6 +70,17 @@ export function DashboardShell() {
       router.replace(`/dashboard?tab=${key}`);
     });
   }
+
+  // Log each tab open for non-admin users. Fire-and-forget: the backend resolves
+  // the username from the session cookie and skips admins, so failures here must
+  // never affect navigation.
+  useEffect(() => {
+    if (!session?.authenticated || session.is_admin) return;
+    apiRequest("/api/log/tab-visit", {
+      method: "POST",
+      body: JSON.stringify({ tab: currentPage.key }),
+    }).catch(() => {});
+  }, [currentPage.key, session?.authenticated, session?.is_admin]);
 
   async function handleLogin(username: string, password: string) {
     const nextSession = await login(username, password);
@@ -206,6 +219,10 @@ export function DashboardShell() {
         {/* Admin-only — double-gated on is_admin (server enforces the real boundary). */}
         {currentPage.key === "user-management" && session.is_admin ? (
           <UserManagementPage />
+        ) : null}
+
+        {currentPage.key === "activity-log" && session.is_admin ? (
+          <ActivityLogPage />
         ) : null}
       </main>
 
@@ -726,6 +743,18 @@ export function DashboardShell() {
           color: rgba(219,231,244,0.85); font-size: 12px; line-height: 1.5;
         }
         .um-page { display: flex; flex-direction: column; gap: 16px; }
+        .um-activity { display: flex; flex-direction: column; gap: 16px; }
+        .um-activity-filter { align-items: center; }
+        .um-filter-label { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
+        .um-activity-filter .um-select { min-width: 200px; margin: 0; }
+        .um-visit-user { margin-left: 8px; font-size: 11px; color: #6b7280; }
+        .um-tabs-link {
+          border: none; background: transparent; cursor: pointer; padding: 0;
+          color: #0f4c81; font-size: 13px; font-weight: 600; text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .um-tabs-link:hover { color: #0c3e6b; }
+        .um-tabs-empty { color: #9aa5b1; font-size: 13px; }
         .um-toolbar {
           display: flex; align-items: center; justify-content: space-between;
           gap: 16px; flex-wrap: wrap;
@@ -750,6 +779,18 @@ export function DashboardShell() {
           padding: 10px 14px; border-radius: 8px; background: #fdf1ee;
           border: 1px solid #f0c7bc; color: #b23b22; font-size: 13px;
         }
+        .um-snapshot-pending {
+          display: flex; align-items: center; justify-content: space-between; gap: 18px;
+          padding: 14px 16px; border-radius: 10px;
+          background: #fff8e6; border: 1px solid #f1c36d;
+          box-shadow: 0 2px 8px rgba(180, 106, 0, 0.12);
+        }
+        .um-snapshot-pending-title { color: #8a5200; font-size: 14px; font-weight: 800; }
+        .um-snapshot-pending-text { color: #765522; font-size: 12px; margin-top: 3px; }
+        .um-btn-snapshot {
+          flex: 0 0 auto; background: #b46a00; border-color: #b46a00; color: #ffffff;
+        }
+        .um-btn-snapshot:hover:not(:disabled) { background: #925600; }
         .um-loading { color: #6b7280; padding: 24px; }
         .um-table-card {
           background: #ffffff; border: 1px solid #e6edf4; border-radius: 12px;
@@ -814,7 +855,11 @@ export function DashboardShell() {
         .um-chip button { border: none; background: transparent; color: #0f4c81; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
         .um-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
         .um-hint { font-size: 11px; color: #9aa4b1; margin: 0; }
-        @media (max-width: 640px) { .um-field-row { grid-template-columns: 1fr; } }
+        @media (max-width: 640px) {
+          .um-field-row { grid-template-columns: 1fr; }
+          .um-snapshot-pending { align-items: stretch; flex-direction: column; }
+          .um-btn-snapshot { width: 100%; }
+        }
       `}</style>
     </div>
   );

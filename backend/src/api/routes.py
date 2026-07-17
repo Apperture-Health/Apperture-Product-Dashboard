@@ -7,6 +7,7 @@ import json
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from api.page_registry import PAGE_MAP, PAGE_LABEL_BY_KEY
 from api.schemas import (
@@ -94,6 +95,7 @@ from services.ai_summary import (
 from services.analytics import aggregate_pro_usage
 from services.pro_analysis import planned_vs_reported_pivot, top_instruments
 from data.auth_repository import get_user_row
+from data import activity_log
 from utils.auth import authenticate, get_allowed_tabs_for_user, get_user_access
 from utils.filters import FilterState, build_allowed_indications, build_allowed_atc_classes, get_unique_display_labels
 from utils.runtime import runtime
@@ -235,7 +237,17 @@ def login(payload: AuthLoginRequest, request: Request) -> AuthSessionDTO:
     session = _session_payload(payload.username)
     # Store only small fields in the cookie — allowed_indications can be 100+ strings
     # which pushes the cookie over the 4 KB browser limit and causes silent auth failures.
-    request.session["auth"] = _session_cookie_payload(session)
+    cookie = _session_cookie_payload(session)
+    # Start a usage-logging session for non-admin users; the id rides in the cookie
+    # so subsequent tab-visit logs can be grouped by login. Never block login on it.
+    if not session.is_admin:
+        try:
+            sid = activity_log.start_session(payload.username)
+            if sid:
+                cookie["session_id"] = sid
+        except Exception:  # pragma: no cover - logging must never break login
+            pass
+    request.session["auth"] = cookie
     return session
 
 
@@ -259,8 +271,49 @@ def me(request: Request) -> AuthSessionDTO:
     # the larger access lists. This prevents a valid cookie from preserving stale
     # privileges after an administrator changes the account.
     session = _session_payload(username)
-    request.session["auth"] = _session_cookie_payload(session)
+    cookie = _session_cookie_payload(session)
+    # Preserve the usage-logging session id across refreshes so a page reload
+    # doesn't start a new session — a session spans one login.
+    existing_sid = auth.get("session_id")
+    if existing_sid:
+        cookie["session_id"] = existing_sid
+    request.session["auth"] = cookie
     return session
+
+
+class TabVisitRequest(BaseModel):
+    tab: str
+
+
+@api_router.post("/api/log/tab-visit")
+def log_tab_visit(payload: TabVisitRequest, request: Request) -> dict[str, str]:
+    """Record that the current (non-admin) user opened a tab.
+
+    The username is taken from the session cookie, never the request body. Admin
+    (superadmin) accounts are excluded. Logging failures must never surface to the
+    client — navigation continues regardless.
+    """
+    auth = _require_auth(request)
+    username = auth.get("username")
+    row = get_user_row(username)
+    if not row or row.get("is_admin"):
+        # Unknown, inactive, or admin account → do not log.
+        return {"status": "skipped"}
+    if payload.tab not in PAGE_LABEL_BY_KEY:
+        raise HTTPException(status_code=400, detail="Unknown tab")
+    try:
+        session_id = auth.get("session_id")
+        if not session_id:
+            # Defensive: a cookie minted before session logging (or any gap) —
+            # start a session now and persist its id back to the cookie.
+            session_id = activity_log.start_session(username)
+            if session_id:
+                auth["session_id"] = session_id
+                request.session["auth"] = auth
+        activity_log.log_tab_visit(username, payload.tab, session_id)
+    except Exception:  # pragma: no cover - logging must never break navigation
+        return {"status": "error"}
+    return {"status": "ok"}
 
 
 @api_router.get("/api/meta/pages")

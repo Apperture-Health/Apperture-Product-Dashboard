@@ -15,8 +15,7 @@ export const PAGE_META: PageMeta[] = [
   { key: "trial-groups", label: "🗂️ Trial Groups", title: "Trial Groups" },
   { key: "safety", label: "🛡️ Safety", title: "Safety Analysis" },
   { key: "real-world-safety", label: "🌐 Real World Safety", title: "FAERS Post-Market Safety" },
-  { key: "user-management", label: "👥 Manage Users", title: "Manage Users" },
-  { key: "activity-log", label: "📊 Activity Log", title: "Activity Log" },
+  { key: "user-management", label: "🔐 User Management", title: "User Management" },
 ];
 
 export const HOME_KEY = "home";
@@ -33,7 +32,7 @@ export const PAGE_GROUPS: PageGroup[] = [
   { key: "design",   label: "🔬 Trial Design",        tabKeys: ["trial-design", "trial-groups"] },
   { key: "evidence", label: "📈 Clinical Evidence",   tabKeys: ["endpoints", "outcomes", "scores", "pro-overview"] },
   { key: "safety",   label: "🛡️ Safety",              tabKeys: ["safety", "real-world-safety"] },
-  { key: "admin",    label: "🔐 User Management",      tabKeys: ["user-management", "activity-log"] },
+  { key: "admin",    label: "🔐 User Management",      tabKeys: ["user-management"] },
 ];
 
 export const PAGE_SUBTITLES: Record<string, string> = {
@@ -53,7 +52,6 @@ export const PAGE_SUBTITLES: Record<string, string> = {
   "real-world-safety": "Post-market spontaneous safety reports from FDA FAERS.",
   "ask-the-data": "Ask a question about the clinical trial landscape — filters are applied automatically across all tabs.",
   "user-management": "Manage dashboard users: logins, tab access, disease-area scope, and KPI snapshots.",
-  "activity-log": "Tab-visit history by user — when each dashboard user opened which tab.",
 };
 
 export const MODULE_DESC: Record<string, string> = {

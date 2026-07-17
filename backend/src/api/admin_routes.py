@@ -10,10 +10,10 @@ Manages user_creds + user_tabs + user_disease_areas. Drug classes are not manage
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from api.page_registry import PAGE_MAP, ADMIN_TAB_LABEL
+from api.page_registry import PAGE_MAP, ADMIN_TAB_LABEL_SET
 from data.auth_repository import (
     get_user_row,
     list_all_users_full,
@@ -21,6 +21,7 @@ from data.auth_repository import (
     count_active_admins,
 )
 from data import auth_admin
+from data import activity_log
 from services.snapshot_sql import rebuild_all_snapshots
 
 admin_router = APIRouter(prefix="/api/admin")
@@ -111,7 +112,7 @@ def options(request: Request) -> dict:
         "tabs": [
             auth_admin.canonical_tab_text(label)
             for _, label, _ in PAGE_MAP
-            if label != ADMIN_TAB_LABEL
+            if label not in ADMIN_TAB_LABEL_SET
         ],
         "disease_areas": sorted(auth_admin.valid_disease_areas()),
     }
@@ -174,6 +175,20 @@ def activate_user(username: str, request: Request) -> dict:
         raise HTTPException(status_code=404, detail=f"User {username!r} not found.")
     auth_admin.set_active(username, True)
     return {"ok": True, "username": username, "is_active": True}
+
+
+@admin_router.get("/activity")
+def activity(
+    request: Request,
+    limit: int = Query(default=500, ge=1, le=5000),
+    username: str | None = Query(default=None),
+) -> dict:
+    """Recent login sessions (usage log), newest first, each with the tabs visited
+    in that session. Optionally filter by username."""
+    _require_admin(request)
+    username = (username or "").strip() or None
+    sessions = activity_log.get_recent_sessions(limit=limit, username=username)
+    return {"sessions": sessions}
 
 
 @admin_router.post("/rebuild-snapshots")

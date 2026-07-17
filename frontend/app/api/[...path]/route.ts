@@ -15,7 +15,9 @@ async function getIdentityToken(): Promise<string | null> {
 }
 
 async function proxy(req: NextRequest, path: string[]) {
-  const target = `${BACKEND}/api/${path.join("/")}`;
+  // Preserve the query string (e.g. ?username=…) — without it, filtered
+  // requests silently fall back to the unfiltered endpoint.
+  const target = `${BACKEND}/api/${path.join("/")}${req.nextUrl.search}`;
 
   const headers = new Headers();
   req.headers.forEach((value, key) => {

@@ -15,7 +15,7 @@ async function getIdentityToken(): Promise<string | null> {
 }
 
 async function proxy(req: NextRequest, path: string[]) {
-  const target = `${BACKEND}/auth/${path.join("/")}`;
+  const target = `${BACKEND}/auth/${path.join("/")}${req.nextUrl.search}`;
 
   const headers = new Headers();
   req.headers.forEach((value, key) => {

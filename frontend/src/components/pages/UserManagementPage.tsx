@@ -136,6 +136,7 @@ export function UserManagementPage() {
   const [formError, setFormError] = useState("");
   const [rebuilding, setRebuilding] = useState(false);
   const [rebuildMsg, setRebuildMsg] = useState("");
+  const [snapshotPending, setSnapshotPending] = useState(false);
   const activeUserCount = users.filter((user) => user.is_active).length;
 
   const load = useCallback(async () => {
@@ -183,6 +184,8 @@ export function UserManagementPage() {
           body: JSON.stringify(body),
         });
       }
+      setSnapshotPending(true);
+      setRebuildMsg("");
       setForm(null);
       await load();
     } catch (e) {
@@ -214,6 +217,7 @@ export function UserManagementPage() {
       setRebuildMsg(
         `✓ Rebuilt ${r.scopes.length} access-scope snapshot(s) for ${r.active_users} active users.`,
       );
+      setSnapshotPending(false);
     } catch (e) {
       setRebuildMsg(`✕ ${await errorMessage(e)}`);
     } finally {
@@ -238,6 +242,24 @@ export function UserManagementPage() {
         </div>
       </div>
 
+      {snapshotPending && (
+        <div className="um-snapshot-pending" role="status">
+          <div>
+            <div className="um-snapshot-pending-title">⚠ Snapshot rebuild pending</div>
+            <div className="um-snapshot-pending-text">
+              User access has changed. Rebuild snapshots so Home KPIs match the updated access scope.
+            </div>
+          </div>
+          <button
+            className="um-btn um-btn-snapshot"
+            onClick={rebuildSnapshots}
+            disabled={rebuilding}
+          >
+            {rebuilding ? "Rebuilding…" : "Rebuild snapshots now"}
+          </button>
+        </div>
+      )}
+
       {error && <div className="um-alert">{error}</div>}
       {loading ? (
         <div className="um-loading">Loading users…</div>
@@ -246,7 +268,7 @@ export function UserManagementPage() {
           <table className="um-table">
             <thead>
               <tr>
-                <th>Username</th><th>Display name</th><th>Password</th>
+                <th>Username</th><th>Display name</th>
                 <th>Tabs</th><th>Disease areas</th><th>Status</th><th></th>
               </tr>
             </thead>
@@ -258,7 +280,6 @@ export function UserManagementPage() {
                     {u.is_admin && <span className="um-badge um-badge-admin">ADMIN</span>}
                   </td>
                   <td>{u.display_name}</td>
-                  <td className="um-mono">{u.password}</td>
                   <td>{summarize(u.tabs, u.tabs_exclude)}</td>
                   <td>{summarize(u.disease_areas, u.disease_areas_exclude)}</td>
                   <td>
